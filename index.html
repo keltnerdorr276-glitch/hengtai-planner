@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恒太运营方案生成器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #1f2329; }
+
+  .app-header { background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%); color: white; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .app-header h1 { font-size: 22px; font-weight: 600; }
+  .app-header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+  .api-key-section { display: flex; align-items: center; gap: 8px; }
+  .api-key-section label { font-size: 13px; opacity: 0.9; }
+  .api-key-input { padding: 6px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(255,255,255,0.15); color: white; font-size: 13px; width: 280px; outline: none; }
+  .api-key-input::placeholder { color: rgba(255,255,255,0.5); }
+  .api-key-input:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.2); }
+
+  .main-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  /* Common fields card */
+  .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title .icon { width: 24px; height: 24px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid .full-width { grid-column: 1 / -1; }
+
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 13px; font-weight: 500; color: #374151; }
+  .form-group label .required { color: #ef4444; margin-left: 2px; }
+  .form-group label .optional { color: #9ca3af; font-weight: 400; font-size: 12px; margin-left: 4px; }
+  .form-group input, .form-group textarea, .form-group select {
+    padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;
+    font-family: inherit; outline: none; transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-group .hint { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+  /* Tabs */
+  .tab-nav { display: flex; gap: 4px; background: #f3f4f6; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+  .tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; border-radius: 8px; cursor: pointer;
+    font-size: 14px; font-weight: 500; color: #6b7280; transition: all 0.2s; font-family: inherit; }
+  .tab-btn:hover { color: #374151; background: rgba(255,255,255,0.5); }
+  .tab-btn.active { background: white; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  /* Dynamic rows */
+  .dynamic-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .dynamic-table th { font-size: 12px; font-weight: 500; color: #6b7280; text-align: left; padding: 8px 8px 8px 0; white-space: nowrap; }
+  .dynamic-table td { padding: 4px 4px 4px 0; vertical-align: top; }
+  .dynamic-table input, .dynamic-table select { width: 100%; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: inherit; }
+  .dynamic-table input:focus, .dynamic-table select:focus { border-color: #2563eb; outline: none; }
+  .dynamic-table textarea { width: 100%; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 36px; }
+
+  .row-actions { display: flex; gap: 4px; align-items: center; }
+  .btn-icon { width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
+  .btn-add { background: #ecfdf5; color: #059669; }
+  .btn-add:hover { background: #d1fae5; }
+  .btn-remove { background: #fef2f2; color: #dc2626; }
+  .btn-remove:hover { background: #fee2e2; }
+
+  /* Generate button */
+  .generate-section { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
+  .btn-generate { padding: 12px 32px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none;
+    border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+  .btn-generate:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+  .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .status-text { font-size: 14px; color: #6b7280; }
+  .status-text.error { color: #dc2626; }
+  .status-text.success { color: #059669; }
+
+  /* Loading spinner */
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Preview result panel */
+  .preview-panel { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 24px; overflow: hidden; border: 2px solid #059669; }
+  .preview-header { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .preview-header h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .preview-actions { display: flex; gap: 12px; align-items: center; }
+  .btn-download { padding: 8px 24px; background: white; color: #059669; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .btn-download:hover { background: #f0fdf4; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .btn-close-preview { padding: 6px 12px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .btn-close-preview:hover { background: rgba(255,255,255,0.3); }
+  .preview-body { padding: 20px 24px; max-height: 600px; overflow-y: auto; }
+  .preview-section { margin-bottom: 20px; }
+  .preview-section:last-child { margin-bottom: 0; }
+  .preview-section-title { font-size: 15px; font-weight: 600; color: #1f2329; padding: 8px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .preview-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .preview-table th { background: #f9fafb; padding: 8px 12px; text-align: left; font-weight: 500; color: #6b7280; border: 1px solid #e5e7eb; white-space: nowrap; }
+  .preview-table td { padding: 8px 12px; border: 1px solid #e5e7eb; color: #374151; line-height: 1.5; }
+  .preview-table tr:hover td { background: #f0fdf4; }
+  .preview-filename { font-size: 13px; opacity: 0.9; }
+
+  /* Image upload */
+  .image-upload { border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .image-upload:hover { border-color: #2563eb; background: #f8faff; }
+  .image-upload.has-image { border-style: solid; border-color: #059669; }
+  .image-upload img { max-width: 200px; max-height: 150px; border-radius: 6px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .tab-nav { flex-wrap: wrap; }
+    .app-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useCallback } = React;
+
+// ============================================================
+// Field configurations with placeholders
+// ============================================================
+const TABS = [
+  { key: 'format', name: '超级业态运营方案', icon: '🏪' },
+  { key: 'scene',  name: '超级场景运营方案', icon: '🌳' },
+  { key: 'ip',     name: 'IP活动运营方案',   icon: '🎉' },
+  { key: 'brand',  name: '新品牌推广运营方案', icon: '🏷️' },
+];
+
+const EMPTY_FORMAT_BRAND = { name: '', category: '', tag: '', open_date: '', is_first_store: true, price_range: '', sp_direction: '' };
+const EMPTY_IP_ACTIVITY = { name: '', date_range: '', duration: '', level: '季度IP', pr_direction: '' };
+const EMPTY_BRAND_ITEM = { name: '', open_date: '', positioning: '', style: '', is_first_store: true, price_range: '', strategy: '', target_audience: '', opening_activity: '' };
+
+// ============================================================
+// Reusable Components
+// ============================================================
+function FormField({ label, required, optional, hint, children, fullWidth }) {
+  return (
+    <div className={`form-group ${fullWidth ? 'full-width' : ''}`}>
+      <label>
+        {label}
+        {required && <span className="required">*</span>}
+        {optional && <span className="optional">（可选）</span>}
+      </label>
+      {children}
+      {hint && <div className="hint">{hint}</div>}
+    </div>
+  );
+}
+
+// ============================================================
+// Common Fields
+// ============================================================
+function CommonFields({ common, setCommon }) {
+  const update = (key, val) => setCommon(prev => ({ ...prev, [key]: val }));
+  return (
+    <div className="card">
+      <div className="card-title"><div className="icon">📋</div> 项目背景信息（所有方案共用）</div>
+      <div className="form-grid">
+        <FormField label="项目名称" required hint="示例：衢州南湖恒太城">
+          <input placeholder="衢州南湖恒太城" value={common.project_name} onChange={e => update('project_name', e.target.value)} />
+        </FormField>
+        <FormField label="城市所在地" required hint="示例：浙江省衢州市">
+          <input placeholder="浙江省衢州市" value={common.city} onChange={e => update('city', e.target.value)} />
+        </FormField>
+        <FormField label="项目定位" required hint="一句话概括项目核心定位">
+          <input placeholder="衢州首个青年潮流生活中心" value={common.positioning} onChange={e => update('positioning', e.target.value)} />
+        </FormField>
+        <FormField label="推广定调" required hint="整体推广方向的关键词">
+          <input placeholder="年轻力、品质生活、城市新地标" value={common.promotion_tone} onChange={e => update('promotion_tone', e.target.value)} />
+        </FormField>
+        <FormField label="目标客群" required hint="最多3个核心客群">
+          <input placeholder="18-35岁城市青年、年轻家庭、品质消费客群" value={common.target_audience} onChange={e => update('target_audience', e.target.value)} />
+        </FormField>
+        <FormField label="年度主题词" optional hint="不填则由AI根据项目特征自动建议">
+          <input placeholder="如：青年引力场、城市新生力" value={common.annual_theme} onChange={e => update('annual_theme', e.target.value)} />
+        </FormField>
+        <FormField label="营销背景" required fullWidth hint="城市消费特征+项目核心竞争背景，3-5句话">
+          <textarea placeholder="衢州为四省通衢的区域中心城市，常住人口约230万，城区商业以传统百货为主，缺乏体验式商业综合体。恒太城为衢州首个定位年轻潮流的购物中心，填补城市商业空白……" value={common.marketing_bg} onChange={e => update('marketing_bg', e.target.value)} />
+        </FormField>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Tab 1: 超级业态运营方案
+// ============================================================
+function FormatTab({ specific, setSpecific }) {
+  const brands = specific.brands || [{ ...EMPTY_FORMAT_BRAND }];
+  const updateBrand = (i, key, val) => {
+    const nb = [...brands];
+    nb[i] = { ...nb[i], [key]: val };
+    setSpecific(prev => ({ ...prev, brands: nb }));
+  };
+  const addBrand = () => setSpecific(prev => ({ ...prev, brands: [...(prev.brands||[]), { ...EMPTY_FORMAT_BRAND }] }));
+  const removeBrand = (i) => {
+    if (brands.length <= 1) return;
+    setSpecific(prev => ({ ...prev, brands: prev.brands.filter((_, idx) => idx !== i) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-title"><div className="icon">🏪</div> 超级业态运营方案</div>
+      <div className="form-grid" style={{marginBottom: 20}}>
+        <FormField label="超级业态定位" required fullWidth hint="明确业态核心方向，如：超级美食中心、夜经济中心、零售中心、儿童休闲娱乐中心">
+          <input placeholder="超级美食中心" value={specific.format_positioning || ''} onChange={e => setSpecific(prev => ({ ...prev, format_positioning: e.target.value }))} />
+        </FormField>
+      </div>
+
+      <div style={{fontSize: 14, fontWeight: 500, marginBottom: 12}}>品牌清单（每行一个品牌）</div>
+      <div style={{overflowX: 'auto'}}>
+        <table className="dynamic-table">
+          <thead>
+            <tr>
+              <th style={{width: 120}}>业态类型 *</th>
+              <th style={{width: 120}}>品牌名称 *</th>
+              <th style={{width: 130}}>品牌标签 *</th>
+              <th style={{width: 110}}>开业时间 *</th>
+              <th style={{width: 80}}>首店 *</th>
+              <th style={{width: 100}}>客单价</th>
+              <th style={{width: 160}}>SP货盘方向</th>
+              <th style={{width: 60}}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {brands.map((b, i) => (
+              <tr key={i}>
+                <td><input placeholder="韩式餐饮" value={b.category} onChange={e => updateBrand(i, 'category', e.target.value)} /></td>
+                <td><input placeholder="NEED韩式料理" value={b.name} onChange={e => updateBrand(i, 'name', e.target.value)} /></td>
+                <td>
+                  <select value={b.tag} onChange={e => updateBrand(i, 'tag', e.target.value)}>
+                    <option value="">请选择</option>
+                    <option value="首店思维">城市首店</option>
+                    <option value="品质标杆">品质标杆</option>
+                    <option value="网红打卡">网红爆款</option>
+                    <option value="亲子友好">亲子友好</option>
+                    <option value="健康生活">健康生活</option>
+                    <option value="烟火气">本地烟火气</option>
+                    <option value="高端商务">高端商务</option>
+                    <option value="年轻潮流">年轻潮流</option>
+                  </select>
+                </td>
+                <td><input placeholder="2026年5月" value={b.open_date} onChange={e => updateBrand(i, 'open_date', e.target.value)} /></td>
+                <td>
+                  <select value={b.is_first_store ? 'yes' : 'no'} onChange={e => updateBrand(i, 'is_first_store', e.target.value === 'yes')}>
+                    <option value="yes">是</option>
+                    <option value="no">否</option>
+                  </select>
+                </td>
+                <td><input placeholder="人均80-120" value={b.price_range} onChange={e => updateBrand(i, 'price_range', e.target.value)} /></td>
+                <td><input placeholder="团券/满减方向" value={b.sp_direction} onChange={e => updateBrand(i, 'sp_direction', e.target.value)} /></td>
+                <td className="row-actions">
+                  <button className="btn-icon btn-add" onClick={addBrand} title="新增品牌">+</button>
+                  {brands.length > 1 && <button className="btn-icon btn-remove" onClick={() => removeBrand(i)} title="删除">−</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Tab 2: 超级场景运营方案
+// ============================================================
+function SceneTab({ specific, setSpecific }) {
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target.result.split(',')[1];
+      setSpecific(prev => ({
+        ...prev,
+        scene_image: { data: base64, media_type: file.type },
+        scene_image_preview: ev.target.result
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="card">
+      <div className="card-title"><div className="icon">🌳</div> 超级场景运营方案</div>
+      <div className="form-grid">
+        <FormField label="场景名称" required hint="门店自行选择的场内空间名称">
+          <input placeholder="屋顶花园" value={specific.scene_name || ''} onChange={e => setSpecific(prev => ({ ...prev, scene_name: e.target.value }))} />
+        </FormField>
+        <FormField label="场景位置" required hint="场景在商场中的具体位置">
+          <input placeholder="5F屋顶层，约3万㎡露天空间" value={specific.scene_location || ''} onChange={e => setSpecific(prev => ({ ...prev, scene_location: e.target.value }))} />
+        </FormField>
+        <FormField label="主要构成" required hint="20字以内简述场景组成">
+          <input placeholder="绿植景观+休闲座椅+户外餐饮+儿童游乐" value={specific.scene_composition || ''} onChange={e => setSpecific(prev => ({ ...prev, scene_composition: e.target.value }))} />
+        </FormField>
+        <FormField label="核心定位" required hint="一句话概括场景定位">
+          <input placeholder="城市级户外社交与休闲目的地" value={specific.scene_positioning || ''} onChange={e => setSpecific(prev => ({ ...prev, scene_positioning: e.target.value }))} />
+        </FormField>
+        <FormField label="亮相时间" required hint="门店自行确定，格式如：2026年6月6日">
+          <input placeholder="2026年6月6日" value={specific.debut_date || ''} onChange={e => setSpecific(prev => ({ ...prev, debut_date: e.target.value }))} />
+        </FormField>
+        <FormField label="变装节点" required hint="门店自行规划的变装时间节点">
+          <input placeholder="6月亮相 / 10月秋季变装 / 1月春节变装" value={specific.transform_nodes || ''} onChange={e => setSpecific(prev => ({ ...prev, transform_nodes: e.target.value }))} />
+        </FormField>
+        <FormField label="场景图片" optional fullWidth hint="上传场景实拍/效果图，帮助AI更好理解空间特征">
+          <div
+            className={`image-upload ${specific.scene_image_preview ? 'has-image' : ''}`}
+            onClick={() => document.getElementById('scene-image-input').click()}
+          >
+            {specific.scene_image_preview
+              ? <img src={specific.scene_image_preview} alt="场景图片" />
+              : <div style={{color: '#9ca3af'}}>📷 点击上传场景图片（支持JPG/PNG）</div>
+            }
+            <input id="scene-image-input" type="file" accept="image/*" style={{display:'none'}} onChange={handleImageUpload} />
+          </div>
+        </FormField>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Tab 3: IP活动运营方案
+// ============================================================
+function IpTab({ specific, setSpecific }) {
+  const activities = specific.activities || [{ ...EMPTY_IP_ACTIVITY }];
+  const updateActivity = (i, key, val) => {
+    const na = [...activities];
+    na[i] = { ...na[i], [key]: val };
+    setSpecific(prev => ({ ...prev, activities: na }));
+  };
+  const addActivity = () => setSpecific(prev => ({ ...prev, activities: [...(prev.activities||[]), { ...EMPTY_IP_ACTIVITY }] }));
+  const removeActivity = (i) => {
+    if (activities.length <= 1) return;
+    setSpecific(prev => ({ ...prev, activities: prev.activities.filter((_, idx) => idx !== i) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-title"><div className="icon">🎉</div> IP活动运营方案</div>
+      <div style={{fontSize: 13, color: '#6b7280', marginBottom: 16}}>
+        填写年度IP和季度IP活动信息。月度IP不做打样，已过期的活动将自动跳过。
+      </div>
+      <div style={{overflowX: 'auto'}}>
+        <table className="dynamic-table">
+          <thead>
+            <tr>
+              <th style={{width: 160}}>活动名称 *</th>
+              <th style={{width: 150}}>时间区间 *</th>
+              <th style={{width: 80}}>天数 *</th>
+              <th style={{width: 100}}>活动级别 *</th>
+              <th style={{width: 200}}>月度PR活动方向</th>
+              <th style={{width: 60}}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {activities.map((a, i) => (
+              <tr key={i}>
+                <td><input placeholder="超有意思大会第二季" value={a.name} onChange={e => updateActivity(i, 'name', e.target.value)} /></td>
+                <td><input placeholder="4.30-5.5" value={a.date_range} onChange={e => updateActivity(i, 'date_range', e.target.value)} /></td>
+                <td><input placeholder="7" type="number" value={a.duration} onChange={e => updateActivity(i, 'duration', e.target.value)} /></td>
+                <td>
+                  <select value={a.level} onChange={e => updateActivity(i, 'level', e.target.value)}>
+                    <option value="年度IP">年度IP</option>
+                    <option value="季度IP">季度IP</option>
+                  </select>
+                </td>
+                <td><input placeholder="如：美食嘉年华、非遗国潮市集（可选）" value={a.pr_direction} onChange={e => updateActivity(i, 'pr_direction', e.target.value)} /></td>
+                <td className="row-actions">
+                  <button className="btn-icon btn-add" onClick={addActivity} title="新增活动">+</button>
+                  {activities.length > 1 && <button className="btn-icon btn-remove" onClick={() => removeActivity(i)} title="删除">−</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Tab 4: 新品牌推广运营方案
+// ============================================================
+function BrandTab({ specific, setSpecific }) {
+  const brands = specific.brands || [{ ...EMPTY_BRAND_ITEM }];
+  const updateBrand = (i, key, val) => {
+    const nb = [...brands];
+    nb[i] = { ...nb[i], [key]: val };
+    setSpecific(prev => ({ ...prev, brands: nb }));
+  };
+  const addBrand = () => setSpecific(prev => ({ ...prev, brands: [...(prev.brands||[]), { ...EMPTY_BRAND_ITEM }] }));
+  const removeBrand = (i) => {
+    if (brands.length <= 1) return;
+    setSpecific(prev => ({ ...prev, brands: prev.brands.filter((_, idx) => idx !== i) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-title"><div className="icon">🏷️</div> 新品牌推广运营方案</div>
+      <div style={{fontSize: 13, color: '#6b7280', marginBottom: 16}}>
+        建议选择3个即将开业的重要品牌（首店优先），每个品牌将生成完整的开业推广全周期方案。
+      </div>
+
+      {brands.map((b, i) => (
+        <div key={i} style={{border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, marginBottom: 12, position: 'relative'}}>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+            <div style={{fontSize: 14, fontWeight: 500}}>品牌 {i + 1}</div>
+            <div className="row-actions">
+              <button className="btn-icon btn-add" onClick={addBrand} title="新增品牌">+</button>
+              {brands.length > 1 && <button className="btn-icon btn-remove" onClick={() => removeBrand(i)} title="删除">−</button>}
+            </div>
+          </div>
+          <div className="form-grid">
+            <FormField label="品牌名称" required>
+              <input placeholder="山缓缓" value={b.name} onChange={e => updateBrand(i, 'name', e.target.value)} />
+            </FormField>
+            <FormField label="开业时间" required hint="月份或具体日期">
+              <input placeholder="2026年5月28日" value={b.open_date} onChange={e => updateBrand(i, 'open_date', e.target.value)} />
+            </FormField>
+            <FormField label="品牌定位" required hint="品牌的核心定位描述">
+              <input placeholder="衢州首家人均200+高端餐饮" value={b.positioning} onChange={e => updateBrand(i, 'positioning', e.target.value)} />
+            </FormField>
+            <FormField label="品牌风格" required hint="帮助AI理解品牌特征">
+              <select value={b.style} onChange={e => updateBrand(i, 'style', e.target.value)}>
+                <option value="">请选择</option>
+                <option value="城市首店">城市首店</option>
+                <option value="品质标杆">品质标杆</option>
+                <option value="网红爆款">网红爆款</option>
+                <option value="亲子友好">亲子友好</option>
+                <option value="健康生活">健康生活</option>
+                <option value="本地烟火气">本地烟火气</option>
+                <option value="高端商务">高端商务</option>
+                <option value="年轻潮流">年轻潮流</option>
+              </select>
+            </FormField>
+            <FormField label="是否首店" required>
+              <select value={b.is_first_store ? 'yes' : 'no'} onChange={e => updateBrand(i, 'is_first_store', e.target.value === 'yes')}>
+                <option value="yes">是</option>
+                <option value="no">否</option>
+              </select>
+            </FormField>
+            <FormField label="客单价范围" required hint="用于推导SP货盘方向">
+              <input placeholder="人均200+" value={b.price_range} onChange={e => updateBrand(i, 'price_range', e.target.value)} />
+            </FormField>
+            <FormField label="营销策略" required fullWidth hint="品牌的核心营销方向和打法">
+              <input placeholder="以口碑和品质感打开市场，联动美食矩阵其他品牌做集群效应" value={b.strategy} onChange={e => updateBrand(i, 'strategy', e.target.value)} />
+            </FormField>
+            <FormField label="目标客群" optional hint="品牌的核心客群画像">
+              <input placeholder="商务宴请、品质约会、家庭聚餐" value={b.target_audience} onChange={e => updateBrand(i, 'target_audience', e.target.value)} />
+            </FormField>
+            <FormField label="开业活动" optional hint="如已有方案直接填入；没有则由AI根据客单价和客群规划">
+              <input placeholder="开业首日VIP品鉴会+满减活动+KOL探店" value={b.opening_activity} onChange={e => updateBrand(i, 'opening_activity', e.target.value)} />
+            </FormField>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// Main App
+// ============================================================
+// ============================================================
+// Preview Panel Component
+// ============================================================
+function PreviewPanel({ result, onClose }) {
+  if (!result) return null;
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(`/api/download/${result.file_id}`);
+      if (!response.ok) throw new Error('下载失败');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      alert('下载失败：' + err.message);
+    }
+  };
+
+  const preview = result.preview || {};
+  const sections = preview.sections || [];
+
+  return (
+    <div className="preview-panel">
+      <div className="preview-header">
+        <h3>方案生成完成</h3>
+        <div className="preview-actions">
+          <span className="preview-filename">{result.filename}</span>
+          <button className="btn-download" onClick={handleDownload}>
+            下载 Excel
+          </button>
+          <button className="btn-close-preview" onClick={onClose}>关闭预览</button>
+        </div>
+      </div>
+      <div className="preview-body">
+        {sections.length === 0 ? (
+          <p style={{color: '#6b7280', textAlign: 'center', padding: '20px'}}>Excel 已生成，点击上方按钮下载</p>
+        ) : (
+          sections.map((section, si) => (
+            <div key={si} className="preview-section">
+              <div className="preview-section-title">
+                <span>{section.title}</span>
+              </div>
+              {section.rows && section.rows.length > 0 ? (
+                <table className="preview-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '15%'}}>模块</th>
+                      <th style={{width: '15%'}}>时间轴</th>
+                      <th>内容预览</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {section.rows.map((row, ri) => (
+                      <tr key={ri}>
+                        <td>{row.module}</td>
+                        <td>{row.time}</td>
+                        <td>{row.content}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{color: '#9ca3af', fontSize: '13px'}}>暂无预览数据</p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Main App
+// ============================================================
+function App() {
+  const [apiKey, setApiKey] = useState('');
+  const [activeTab, setActiveTab] = useState('format');
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ text: '', type: '' });
+  const [previewResult, setPreviewResult] = useState(null);
+
+  const [common, setCommon] = useState({
+    project_name: '', city: '', positioning: '', promotion_tone: '',
+    target_audience: '', annual_theme: '', marketing_bg: ''
+  });
+
+  // Each tab has its own specific state
+  const [formatSpecific, setFormatSpecific] = useState({ format_positioning: '', brands: [{ ...EMPTY_FORMAT_BRAND }] });
+  const [sceneSpecific, setSceneSpecific] = useState({});
+  const [ipSpecific, setIpSpecific] = useState({ activities: [{ ...EMPTY_IP_ACTIVITY }] });
+  const [brandSpecific, setBrandSpecific] = useState({ brands: [{ ...EMPTY_BRAND_ITEM }] });
+
+  const specificMap = {
+    format: { state: formatSpecific, setter: setFormatSpecific },
+    scene:  { state: sceneSpecific,  setter: setSceneSpecific },
+    ip:     { state: ipSpecific,     setter: setIpSpecific },
+    brand:  { state: brandSpecific,  setter: setBrandSpecific },
+  };
+
+  const handleGenerate = useCallback(async () => {
+    if (!apiKey.trim()) {
+      setStatus({ text: '请先在顶部输入Claude API Key', type: 'error' });
+      return;
+    }
+    if (!common.project_name.trim()) {
+      setStatus({ text: '请先填写项目名称', type: 'error' });
+      return;
+    }
+
+    setLoading(true);
+    setPreviewResult(null);
+    setStatus({ text: '正在调用AI生成方案，预计需要1-3分钟，请耐心等待……', type: '' });
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tab_type: activeTab,
+          common: common,
+          specific: specificMap[activeTab].state,
+          api_key: apiKey
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '生成失败');
+      }
+
+      // Show preview panel with result
+      setPreviewResult({
+        file_id: data.file_id,
+        filename: data.filename,
+        preview: data.preview
+      });
+
+      setStatus({ text: '方案生成成功！请查看下方预览，确认后点击"下载Excel"按钮保存文件。', type: 'success' });
+    } catch (err) {
+      setStatus({ text: `${err.message}`, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [apiKey, common, activeTab, specificMap]);
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'format': return <FormatTab specific={formatSpecific} setSpecific={setFormatSpecific} />;
+      case 'scene':  return <SceneTab specific={sceneSpecific} setSpecific={setSceneSpecific} />;
+      case 'ip':     return <IpTab specific={ipSpecific} setSpecific={setIpSpecific} />;
+      case 'brand':  return <BrandTab specific={brandSpecific} setSpecific={setBrandSpecific} />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div>
+      <div className="app-header">
+        <div>
+          <h1>恒太运营方案生成器</h1>
+          <div className="subtitle">填写硬内容 → 调用AI → 预览内容 → 下载Excel运营方案</div>
+        </div>
+        <div className="api-key-section">
+          <label>API Key：</label>
+          <input
+            className="api-key-input"
+            type="password"
+            placeholder="sk-ant-api03-..."
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="main-container">
+        <CommonFields common={common} setCommon={setCommon} />
+
+        <div className="tab-nav">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`}
+              onClick={() => { setActiveTab(tab.key); setPreviewResult(null); }}
+            >
+              {tab.icon} {tab.name}
+            </button>
+          ))}
+        </div>
+
+        {renderTabContent()}
+
+        <div className="generate-section">
+          <button className="btn-generate" onClick={handleGenerate} disabled={loading}>
+            {loading ? <><div className="spinner"></div> 正在生成中…</> : <>生成{TABS.find(t => t.key === activeTab)?.name}</>}
+          </button>
+          {status.text && <div className={`status-text ${status.type}`}>{status.text}</div>}
+        </div>
+
+        {previewResult && (
+          <PreviewPanel result={previewResult} onClose={() => setPreviewResult(null)} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
