@@ -3,27 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>恒太运营方案生成器</title>
+<title>恒太运营方案生成器 - 静态版</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #1f2329; }
 
-  .app-header { background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%); color: white; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .app-header { background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%); color: white; padding: 20px 32px; }
+  .header-content { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
   .app-header h1 { font-size: 22px; font-weight: 600; }
   .app-header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 2px; }
 
-  .api-key-section { display: flex; align-items: center; gap: 8px; }
-  .api-key-section label { font-size: 13px; opacity: 0.9; }
-  .api-key-input { padding: 6px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(255,255,255,0.15); color: white; font-size: 13px; width: 280px; outline: none; }
-  .api-key-input::placeholder { color: rgba(255,255,255,0.5); }
-  .api-key-input:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.2); }
+  .api-config-section { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+  .config-group { display: flex; align-items: center; gap: 8px; }
+  .config-group label { opacity: 0.9; }
+  .config-input { padding: 8px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(255,255,255,0.15); color: white; font-size: 12px; outline: none; min-width: 250px; }
+  .config-input::placeholder { color: rgba(255,255,255,0.5); }
+  .config-input:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.2); }
 
-  .main-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .main-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
 
-  /* Common fields card */
   .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
   .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
   .card-title .icon { width: 24px; height: 24px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
@@ -45,14 +47,12 @@
   .form-group textarea { resize: vertical; min-height: 80px; }
   .form-group .hint { font-size: 12px; color: #9ca3af; margin-top: 2px; }
 
-  /* Tabs */
   .tab-nav { display: flex; gap: 4px; background: #f3f4f6; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
   .tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; border-radius: 8px; cursor: pointer;
     font-size: 14px; font-weight: 500; color: #6b7280; transition: all 0.2s; font-family: inherit; }
   .tab-btn:hover { color: #374151; background: rgba(255,255,255,0.5); }
   .tab-btn.active { background: white; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-  /* Dynamic rows */
   .dynamic-table { width: 100%; border-collapse: separate; border-spacing: 0; }
   .dynamic-table th { font-size: 12px; font-weight: 500; color: #6b7280; text-align: left; padding: 8px 8px 8px 0; white-space: nowrap; }
   .dynamic-table td { padding: 4px 4px 4px 0; vertical-align: top; }
@@ -67,7 +67,6 @@
   .btn-remove { background: #fef2f2; color: #dc2626; }
   .btn-remove:hover { background: #fee2e2; }
 
-  /* Generate button */
   .generate-section { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
   .btn-generate { padding: 12px 32px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none;
     border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
@@ -79,11 +78,9 @@
   .status-text.error { color: #dc2626; }
   .status-text.success { color: #059669; }
 
-  /* Loading spinner */
-  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(37,99,235,0.3); border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Preview result panel */
   .preview-panel { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 24px; overflow: hidden; border: 2px solid #059669; }
   .preview-header { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
   .preview-header h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
@@ -102,17 +99,16 @@
   .preview-table tr:hover td { background: #f0fdf4; }
   .preview-filename { font-size: 13px; opacity: 0.9; }
 
-  /* Image upload */
   .image-upload { border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
   .image-upload:hover { border-color: #2563eb; background: #f8faff; }
   .image-upload.has-image { border-style: solid; border-color: #059669; }
   .image-upload img { max-width: 200px; max-height: 150px; border-radius: 6px; }
 
-  /* Responsive */
   @media (max-width: 768px) {
     .form-grid { grid-template-columns: 1fr; }
     .tab-nav { flex-wrap: wrap; }
-    .app-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .header-content { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .api-config-section { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
@@ -123,7 +119,478 @@
 const { useState, useCallback } = React;
 
 // ============================================================
-// Field configurations with placeholders
+// CONFIGURATION: Cloudflare Worker Proxy URL
+// ============================================================
+let CLAUDE_PROXY_URL = 'https://claude-proxy.t4r7snmgjp.workers.dev';
+
+// ============================================================
+// Reference Knowledge Base (inline as JS constants)
+// ============================================================
+const REF_SHARED = `# 通用知识库（每次生成必读）
+
+---
+
+## 一、硬节点/软内容边界
+
+### 硬节点（只读不改，字体黑色）
+
+**项目基本信息**：项目名称、项目定位（一句话）、目标客群（3个以内）、年度主题词（无则AI建议）、营销背景（城市消费特征+项目核心竞争背景，3-5句话）
+
+### 软内容（AI生成，字体黑色）
+
+话题体系（年度主话题+SEO+月度话题）、线上五块内容（推广/直播/SP/会员/口碑）、各模块宣发节奏、KOC裂变和职人分佣调用
+
+---
+
+## 二、三层话题体系
+
+### 话题层级
+- **年度主话题**（全年不变）：品牌认知积累，强制所有内容挂载
+- **SEO占位话题**（每月更新）：占领本地搜索词
+- **月度活动话题**（每月更换）：配合当期活动制造短期热度
+
+### 年度主话题生成规则
+格式：\`#[城市名][年度主题词][自创后缀]\`
+⚠️ 每个项目必须根据自身定位原创后缀词。"引力场"是枣庄专属，"升温场"是寿县专属，其他项目不可复用。
+
+### SEO话题生成规则（每月更新）
+- 当月有超级业态开业 → "[城市名]+首店/新店/美食打卡"
+- 当月有超级场景变装 → "[城市名]+打卡地/拍照/约会去哪"
+- 当月有年度/季度IP → "[城市名]+节日去哪/周末去哪"
+- 无特别重点 → "[城市名]+购物/餐饮/亲子"
+
+### 月度活动话题生成规则
+格式：\`#[年度主话题关键词]·[情绪关键词]\`，用"了"字结尾制造召唤感。
+
+### 三层话题挂载方式
+每条内容发布时同时挂载三层，作为各模块线上行【推广】部分的第一项。
+
+---
+
+## 三、线上五块内容结构
+
+**【推广】**：三层话题 + 故事线主题词 + KOL数量+内容方向 + KOC数量+参与规则 + 宣发矩阵（官号/店总号/KOL/KOC/职人号/商户号/社群/政府媒体/会员体系，共9层）+ 预热节奏
+
+**【直播】**：直播场次 + 主题和货盘方向 + GMV目标 + 是否调用职人参与
+
+**【SP】**：团券品类和定价 + 销售目标 + 是否通过职人分佣渠道分销
+
+**【会员】**：本月会员专属活动/沙龙 + 定向触达客群标签 + 积分活动节奏 + 纳新目标
+
+**【口碑】**：大众点评目标评分/好评数量 + 抖音POI内容量目标 + 差评24小时响应机制
+
+---
+
+## 四、KOC裂变和职人分佣机制
+
+### 定位
+- **KOC裂变 = 内容弹药**：每月为其他模块提供UGC内容
+- **职人分佣 = 销售武器**：把商场员工/导购变成带货节点
+
+### KOC写法规则
+- "KOC招募启动"等管理性动作**不写进T轴月份列**
+- T轴只写：这个月调用KOC做什么具体事情
+- E列写清楚角色定义和参与规则
+
+### 职人写法规则
+- 管理节点不写（筹备/培训/建群）
+- T轴只写：调用场景（开业直播/口碑/走播）、佣金机制（3%-8%）
+
+---
+
+## 五、绝对禁止的偷懒行为
+
+### 1. 占位符式内容（3-10字）
+❌ "矩阵组建。""冲刺。""长效。""持续运营中。"
+
+### 2. 罗列品牌名不串联叙事
+❌ "NEED开业+山缓缓开业+o'eat开业"的流水账
+✅ 必须有叙事引擎串联
+
+### 3. 各模块内容雷同
+❌ 8个模块只换模块名
+✅ 每个模块从专业视角出发，有独立执行动作
+
+### 4. 只写"是什么"不写"怎么做"
+❌ "进行KOL推广"
+✅ "KOL×5（美食探店/生活方式/摄影），第一弹品牌揭秘+第二弹集群预告双线并行"
+
+---
+
+## 六、T-axis 写作格式：【】总-分结构
+
+### 【总】：方括号内写核心创意动作名称（情绪化、画面感）
+执行人读完标题就能立刻知道"这个阶段的核心动作是什么"。标题必须有情绪张力和画面感，参考枣庄标杆：
+✅ 【寻人启事：找一棵树】【品牌盲盒揭秘日】【枣庄终于等到它了】
+✅ 【匠人已就位·明天见】【城市锦鲤·终极福利包】【这条街终于活了】
+✅ 【围挡变了：第一块拼图亮了】【倒计时3天·福利剧透】
+❌ 笼统概括：【预热启动】【蓄势造势】【两弹并行】【冲刺】【长效】【持续运营】
+
+### 【分】：具体执行+时间+目标（后台验证框架，禁止作为标签出现）
+每个T轴单元格的正文部分必须包含三要素：
+- 具体执行步骤和角色分工
+- 具体时间节点
+- 可量化的数字目标
+
+⚠️ **严禁在输出内容中使用 how / when / target 等英文标签。** 这三项仅作为后台质检标准，生成的实际文本中不得出现"how:""when:""target:"字样。正文应自然融入这三个要素，用中文自然表述。
+
+---
+
+## 七、模块内容深度分层规则
+
+### 模块1（话题推演/叙事）= 核心叙事引擎
+模块1是整张打样表的灵魂，必须是最丰富、最有叙事感的模块。要求：
+- E列：写清楚全局叙事策略总纲（三幕结构/叙事弧线/核心情绪走向）
+- T轴单元格：展开具体的叙事执行、话题爆破、KOL/KOC部署、创意内容
+- 字数必须显著高于其他模块（参考枣庄标杆：模块1首月857字，活跃月均147字）
+
+### 其他模块（2-8）= 专业执行层
+其他模块要从各自专业视角出发，写法简洁精准，聚焦具体执行动作，不需要叙事铺排。
+
+### E列 vs T轴的角色分工
+- **E列**：策略概述，回答"这个模块全局要做什么"，是纲领性文字
+- **T轴各列**：时间展开，回答"这个时间段具体做什么"，是执行层面的展开
+- E列不是T轴内容的汇总重复，T轴也不是E列的复制粘贴
+
+### ⚠️ M1（叙事/话题）与 M3（宣发矩阵）的严格分工（强制执行）
+
+**M1 = 讲故事（WHAT & WHY）**
+回答"这个阶段的故事是什么、情绪是什么、消费者会感受到什么"。
+写法：以三幕叙事展开，每个T轴单元格用【】标题+故事性正文描述此阶段的核心创意内容、话题内容、情绪走向。
+✅ 正确写法：「【寻人启事：找一棵树】五一结束，城市回归平静，悬念正式启动。官号发布寻树启事，画面是一张空荡荡的北广场照片，文案只有一句话：听说这里要长出一棵树，有人见过吗？全城矩阵跟发，引发市民讨论。」
+✅ 正确写法：「【第一幕启动·尹珍珠首店开业】首店品牌：尹珍珠烤肉4月25日正式开业，是超级美食中心落地的第一家首店。以"超级美食中心首家首店正式开业"为话题……」
+❌ 错误写法：「话题预研与用户洞察：深度分析目标用户的消费心理，梳理差异化优势。启动KOL素材征集。」（这是执行流程，不是故事）
+❌ 错误写法：「发起话题挑战赛，邀请KOL优先参与内容创作与策划。优化内容SEO关键词布局。」（这是渠道动作，属于M2/M3）
+
+**M3 = 讲渠道和执行（WHO & HOW）**
+回答"谁在什么平台、用什么形式、发什么内容、达到什么目标"。
+写法：以9层矩阵为主线，逐层说明每一层在此阶段的具体动作、内容形式、发布频次、触达目标。
+✅ 正确写法：「官号+KOL（10人）率先发布"城市运动人"系列短视频第一弹；配合热汗减重挑战赛启幕话题同步定调；开始在抖音/小红书铺设预热内容框架。目标：触达≥5万。」
+✅ 正确写法：「【短视频】+【图文】、微信：朋友圈海报、抖音：官号、小红书：官号。KOL×5产出探店短视频，KOC×10话题讨论。」
+❌ 错误写法：重复M1已经描述过的故事内容和情绪铺排
+
+**交叉红线**：
+- M1 中可以出现"官号发布""KOL参与"等角色——但只是叙事场景的一部分，不展开渠道部署细节
+- M3 中可以引用M1的话题名——但只是挂载，不重新讲一遍故事
+- 如果发现M1和M3的某个T轴单元格内容高度雷同，说明边界越了，必须重写
+
+---
+
+## 八、PR活动定义（强制统一理解）
+
+⚠️ **PR = 有爆发点的核心活动内容/体验**——让消费者"想去参加、想发朋友圈"的沉浸式创意活动。
+✅ 艺术市集、骑行嘉年华、cosplay巡游、快闪体验、非遗手作工坊、主题挑战赛、亲子运动会
+❌ 媒体公关（发通稿/新闻稿/邀请媒体报道）——媒体发稿属于线上宣发矩阵，不属于PR模块
+
+**核心判断标准**：这个活动本身有没有"爆点"——能不能让参与者自发传播、形成社交货币。
+
+---
+
+## 九、时间过滤规则（强制执行）
+
+以系统当前日期为基准：
+1. **已过去的月份**：对应单元格填"/"，不做任何内容规划
+2. **已过期的活动**（活动结束日期早于当前日期）：整个活动不打样，跳过
+3. **管理准备动作**（KOC招募启动/职人体系筹备/培训建群等）：若原计划时间已过，不补录，直接从当前月起写实际调用内容
+4. **月度IP**：不做打样（仅年度IP和季度IP需要打样）
+5. 所有月度计划从**当前月或下一个未过期的时间节点**起开始填写
+
+---
+
+## 十、防套用规则
+
+**核心原则：方法论可复用，具体内容必须原创。**
+
+### 10.1 必须原创的内容
+
+| 类别 | 禁止套用 | 必须怎么做 |
+|---|---|---|
+| 场景专属话题 | ❌ "X里的100种生活" | ✅ 从场景名+城市特色原创 |
+| 年度主话题 | ❌ "X引力场""X升温场" | ✅ 从年度主题词+城市名自创 |
+| 月度活动话题 | ❌ "#引力场·X了" | ✅ 用自己年度主话题关键词衍生 |
+| 叙事引擎 | ❌ "集群补完计划""X家首店改写城市格局" | ✅ 从项目业态组合逻辑出发原创 |
+| SP货盘层级 | ❌ 照搬其他项目 | ✅ 根据客单价和城市消费力设计 |
+| KOL/KOC方向 | ❌ 每项目都写"美食探店/生活方式/摄影" | ✅ 根据城市达人生态定制 |
+| PR联动对象 | ❌ 每项目都写"联合文旅局" | ✅ 根据城市实际资源具体指名 |
+
+---
+
+## 十一、Excel颜色规范
+
+### 统一黑色字体
+所有内容统一使用黑色字体（FF1F2329），不再区分硬内容/软内容的颜色差异。线上板块、线下板块、硬节点、AI生成内容，一律黑色。
+
+### 合并单元格逻辑顺序
+1. 写所有Row内容
+2. 统一执行Col B子模块合并
+3. 最后执行Col A纵向大合并`;
+
+const REF_FORMAT = `# 超级业态打样表 · 专用知识库
+
+---
+
+## 一、硬节点清单（生成前必须收集）
+
+**超级业态品牌清单**（每个品牌一行）：
+- 业态类型（根据项目定位自行定义方向名称）
+- 品牌名称
+- 经营思维标签（一个词，核心竞争力）
+- 开业时间（月份或具体日期）
+- 是否首店
+
+**可选补充**：客单价范围（推导SP货盘层级）、年度主话题
+
+**项目基本信息**（见 ref-shared.md）
+
+---
+
+## 二、8模块结构（5线上+3线下）
+
+| 序号 | 模块名称（D列固定，不可修改） | 板块 | 字体颜色 |
+|---|---|---|---|
+| 1 | 话题推演与故事线 / 核心营销叙事与情绪价值挖掘 | 线上 | 黑色 |
+| 2 | 全员宣发矩阵及宣发形式 / 官号、KOL、KOC、会员、政府媒体、店总号、职人号、商户号、社群 | 线上 | 黑色 |
+| 3 | 线上权益预设及会员活动 / 开业无门槛代金券、免费停车券、社群专属到店礼 / 高卡会员闭门品鉴会、定向发送开业无门槛券、积分兑换新店特权 | 线上 | 黑色 |
+| 4 | 直播与带货 / 洽谈专属促销货盘、早鸟预售直播、现场实景走播 | 线上 | 黑色 |
+| 5 | 大众点评与抖音评分运维 / 首店口碑决定首店效应能否持续兑现 | 线上 | 黑色 |
+| 6 | 品牌招调进度 / 引进头部领导性品牌，升级标杆品牌，引进网红品牌 | 线下 | 黑色 |
+| 7 | 围挡与现场包装 / 统一围挡视觉、核心特色输出、预告开业节点、上墙福利群二维码/领券码 | 线下 | 黑色 |
+| 8 | 现场PR与引流承接 / 美陈落位引导、巡游演绎聚客、排队动线规划、现场服务及备货管理 | 线下 | 黑色 |
+
+---
+
+## 三、列结构（共17列 A-Q）
+
+- A = 重点工作（合并行）
+- B = 案例（合并行，写叙事引擎总纲）
+- C = 板块（线上/线下）
+- D = 工作模块（固定内容，禁止修改）
+- E = 工作内容（AI生成，≥20字，模块全年策略总结）
+- F-Q = 1月至12月（T轴，月度执行内容）
+
+**表头格式**：第1行项目名+"超级业态打样表"（A-Q全合并），第2行列标题，第3行起分模块填写（共8行）。
+
+---
+
+## 四、叙事引擎（最重要的规则）
+
+**定义**：一条贯穿全年12个月的主线叙事，将所有品牌开业串联为递进的城市级事件，不是"品牌A+B+C"流水账。
+
+**生成方法**：
+1. 分析所有品牌的经营思维标签
+2. 找出递进关系：谁是先锋/补位/补完/日常触点
+3. 提炼城市级叙事主题
+
+**在B列明确说明叙事引擎是什么。**
+
+---
+
+## 五、三幕结构（跨12个月）
+
+| 阶段 | 时间跨度 | 核心任务 |
+|---|---|---|
+| 蓄势期 | 首个品牌开业前（≥3个月） | 造势、悬念、期待 |
+| 引爆期 | 首个品牌开业～最后品牌开业 | 全矩阵引爆、多品牌轮流亮相 |
+| 沉淀期 | 最后品牌开业～12月底 | 常态运营、品牌联动、社交货币 |
+
+---
+
+## 六、字数标准（硬性要求）
+
+| 模块 | E列 | 活跃月每格 | 引爆月每格 |
+|---|---|---|---|
+| 模块1（叙事/话题） | ≥20字 | ≥100字 | **≥200字**（首个引爆月含策略总纲可达500-857字） |
+| 模块2（宣发矩阵） | ≥20字 | ≥80字 | ≥150字 |
+| 模块3（SP+会员） | ≥20字 | ≥30字 | ≥50字 |
+| 模块4（直播） | ≥20字 | ≥15字 | ≥40字 |
+| 模块5（口碑） | ≥20字 | ≥15字 | ≥30字 |
+| 模块6-8（线下） | ≥20字 | ≥15字 | ≥30字 |
+
+---
+
+## 七、各模块内容方向
+
+**模块1（话题推演）= 讲故事**：三层话题 + 本月叙事方向 + 创意内容。开业月必须回答与前后品牌关系的三个问题。
+
+**模块2（宣发矩阵）= 讲渠道**：9层矩阵逐层说明各自发布方向、内容形式、频次、数量、触达目标。
+
+**模块3（权益SP+会员）**：SP团券设计 + 会员沙龙/定向触达/积分活动/纳新目标/体验官权益（6项缺一不可）。
+
+**模块4（直播）**：场次+主题+货盘+GMV目标。开业月职人参与。
+
+**模块5（口碑运维）**：大众点评评分目标（首店≥4.6，其他≥4.5）+ 开业月好评≥50条 + 抖音POI量（开业月≥150条，活跃月≥100条）+ 差评24h响应。
+
+**模块6-8（线下）**：招调进度、围挡迭代、现场PR活动和引流承接。`;
+
+const REF_SCENE = `# 超级场景打样表 · 专用知识库
+
+---
+
+## 一、场景打样表模块结构
+
+超级场景打样使用8模块结构，T轴按场景生命周期展开：
+
+### 模块清单
+
+| 序号 | 模块名称 | 板块 | 字体颜色 |
+|---|---|---|---|
+| 1 | 话题推演与故事线 | 线上 | 黑色 |
+| 2 | 全员宣发矩阵 | 线上 | 黑色 |
+| 3 | 权益预设/会员 | 线上 | 黑色 |
+| 4 | 直播与带货 | 线上 | 黑色 |
+| 5 | 口碑运维 | 线上 | 黑色 |
+| 6 | 施工与现场打造 | 线下 | 黑色 |
+| 7 | PR活动与引流（⚠️见下方PR定义） | 线下 | 黑色 |
+| 8 | 商户联动与货盘 | 线下 | 黑色 |
+
+---
+
+## 二、三幕结构（场景生命周期）
+
+### 种下期（亮相前1-3个月）
+- **线下**：施工进场、围挡上线（悬念版文案）
+- **线上推广**：施工偷拍短视频低调铺垫、UGC征集启动、悬念三弹连发；调用KOC铺底
+- **线上会员**：近90天到访会员定向预告、高卡会员提前告知亮相日期
+- **叙事核心**：悬念三弹（偷拍施工→高管探秘→百米倒计时）
+
+### 亮相期（亮相当月）
+- **线下**：亮相仪式、配套PR活动、商户联动货盘激活
+- **线上推广**：KOL全员到场定调、KOC裂变、通稿发布；调用职人参与直播
+- **线上直播**：亮相当天走播，GMV目标预售≥300份
+- **线上SP**：场景限定特调预售19.9-29.9元
+- **线上会员**：新会员注册赠到店礼、高卡会员专属打卡点+停车券
+- **线上口碑**：大众点评POI认领、首月内容量≥200条
+- **目标**：首月声量≥200条短视频，周到场人次≥5000人
+
+### 生长期（亮相后至年底）
+- 每次变装触发新一轮传播（变装即爆点）
+- 目标：每次变装后3天新增打卡≥100条
+- 货盘随变装更新（场景限定特调/到店礼）
+- 会员定向邀约近90天未到场会员
+
+---
+
+## 三、字数标准（硬性要求）
+
+| 模块 | E列（策略概述） | 每个T-axis单元格 |
+|---|---|---|
+| 模块1：话题推演 | ≥150字 | 种下期前3列≥80字，亮相期≥120字，生长期≥80字 |
+| 模块2：宣发矩阵 | ≥100字 | ≥60字 |
+| 模块3：权益/会员 | ≥80字 | ≥50字 |
+| 模块4：直播 | ≥60字 | ≥40字 |
+| 模块5：口碑 | ≥60字 | ≥40字 |
+| 模块6-8：线下 | ≥60字 | ≥30字 |`;
+
+const REF_IP = `# 超级活动打样表 · 专用知识库
+
+---
+
+## 一、7模块结构（缺一不可）
+
+| 序号 | 模块名称 | 板块 | 字体颜色 |
+|---|---|---|---|
+| 1 | 话题推演与故事线（线上活动话题） | 线上 | 黑色 |
+| 2 | 平台热门话题联动/SEO | 线上 | 黑色 |
+| 3 | 全员宣发矩阵及宣发形式（线上推广） | 线上 | 黑色 |
+| 4 | 线上权益预设（线上SP+会员活动） | 线上 | 黑色 |
+| 5 | 直播与带货（线上推广） | 线上 | 黑色 |
+| 6 | PR活动 | 线下 | 黑色 |
+| 7 | 线下SP活动 | 线下 | 黑色 |
+
+---
+
+## 二、T轴时间线结构
+
+**列结构**：
+- A=重点工作, B=案例, C=板块, D=工作模块, E=具体工作内容
+- F、G、H = 活动前（预热阶段）, I = 活动中, J = 活动后（T+1至T+3天）
+
+**预热长度规则**：
+| IP级别 | 最早开始预热 | F列 | G列 | H列 |
+|---|---|---|---|---|
+| 年度IP | T-15（提前15天） | T-15至T-9 | T-8至T-4 | T-3至T-1 |
+| 季度IP | T-10（提前10天） | T-10至T-6 | T-5至T-3 | T-2至T-1 |
+
+**季度IP节奏紧凑规则**：季度IP只有10天预热，节奏必须比年度IP更紧凑、更密集。
+
+---
+
+## 三、模块1必须用三幕叙事结构
+
+**第一幕：情绪唤醒**（F列 T-15/T-10）——悬念+预告，制造期待
+**第二幕：圈层分野+冲刺引爆**（G-H列）——分圈层触达+紧迫感
+**第三幕：现场引爆+战报传播**（I-J列）——活动落地+数据战报
+
+---
+
+## 四、字数标准（硬性要求）
+
+| 模块 | E列（策略概述） | 每个T-axis单元格 |
+|---|---|---|
+| 模块1：话题推演 | ≥120字 | 活动前≥80字，活动中≥100字，活动后≥60字 |
+| 模块2：SEO话题 | ≥50字 | ≥30字 |
+| 模块3：宣发矩阵 | ≥50字 | ≥30字 |
+| 模块4：权益SP | ≥50字 | ≥25字 |
+| 模块5：直播 | ≥50字 | ≥25字 |
+| 模块6-7：线下 | ≥50字 | ≥25字 |`;
+
+const REF_BRAND = `# 品牌推广打样表 · 专用知识库
+
+---
+
+## 一、品牌推广表模块结构
+
+8模块结构（5线上+3线下）
+
+| 序号 | 模块名称 | 板块 | 字体颜色 |
+|---|---|---|---|
+| 1 | 品牌卖点与话题造势 | 线上 | 黑色 |
+| 2 | 全员宣发矩阵 | 线上 | 黑色 |
+| 3 | 线上权益预设及会员活动 | 线上 | 黑色 |
+| 4 | 直播与带货 | 线上 | 黑色 |
+| 5 | 大众点评与口碑运维 | 线上 | 黑色 |
+| 6 | 进场施工与开业保障 | 线下 | 黑色 |
+| 7 | 营运培训与货盘对接 | 线下 | 黑色 |
+| 8 | PR造势与开业动线引流 | 线下 | 黑色 |
+
+---
+
+## 二、T轴时间线结构
+
+**列结构**：
+- A=重点工作, B=案例, C=板块, D=工作模块, E=具体工作内容
+- F=合同签约, G=T-21至T-15(造势), H=T-14至T-4(锁客), I=T-3至T-1(冲刺)
+- J=开业亮相(引爆), K=T+1至T+3(爆单), L=T+4至T+30(稳场), M=T+30后(长效经营)
+
+---
+
+## 三、品牌叙事结构
+
+### 未开业品牌——8步叙事法
+1. **悬念围挡**：围挡文案 + 品牌悬念
+2. **两弹并行**：品牌个性揭秘 + 项目价值预告
+3. **价值冲击**：城市级意义阐述
+4. **紧迫引爆**：倒计时 + 限量预约
+5. **城市事件**：开业定义为城市级传播事件
+6. **战报引爆**：数据战报 + 三级内容分发
+7. **UGC裂变**：用户自发内容引爆
+8. **长效社交货币**：形成持续打卡/推荐习惯
+
+---
+
+## 四、字数标准（硬性要求）
+
+| 模块 | E列（策略概述） | 每个T-axis单元格 |
+|---|---|---|
+| 模块1：品牌卖点 | ≥100字 | 签约/造势/锁客/冲刺各≥50字，开业引爆≥100字，爆单/稳场/长效各≥80字 |
+| 模块2：宣发矩阵 | ≥40字 | 签约≥20字，造势/锁客/冲刺各≥30字，开业引爆≥50字 |
+| 模块3：权益预设 | ≥30字 | ≥15字 |
+| 模块4：直播 | ≥30字 | ≥15字 |
+| 模块5：口碑 | ≥30字 | ≥15字 |
+| 模块6-8：线下 | ≥30字 | ≥15字 |`;
+
+// ============================================================
+// Tabs Configuration
 // ============================================================
 const TABS = [
   { key: 'format', name: '超级业态运营方案', icon: '🏪' },
@@ -135,6 +602,523 @@ const TABS = [
 const EMPTY_FORMAT_BRAND = { name: '', category: '', tag: '', open_date: '', is_first_store: true, price_range: '', sp_direction: '' };
 const EMPTY_IP_ACTIVITY = { name: '', date_range: '', duration: '', level: '季度IP', pr_direction: '' };
 const EMPTY_BRAND_ITEM = { name: '', open_date: '', positioning: '', style: '', is_first_store: true, price_range: '', strategy: '', target_audience: '', opening_activity: '' };
+
+// ============================================================
+// Utility Functions
+// ============================================================
+function getCurrentDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function buildSystemPrompt(tabType, tabName) {
+  const refSpecific = {
+    format: REF_FORMAT,
+    scene: REF_SCENE,
+    ip: REF_IP,
+    brand: REF_BRAND
+  }[tabType] || '';
+
+  return `你是恒太商业年度经营行事历的自动化生成引擎。请严格按照以下知识库规则生成内容。
+
+## 通用知识库
+${REF_SHARED}
+
+## ${tabName}专用知识库
+${refSpecific}
+
+## 核心约束
+1. 已过去的月份/阶段填"/"
+2. 每个T轴单元格必须用【创意标题】+正文结构
+3. 模块1是叙事引擎，字数和深度必须远超其他模块
+4. M1讲故事，M2/M3讲渠道，严禁混淆
+5. 防套用：具体内容必须原创
+6. 所有字体统一黑色
+7. 你必须只输出JSON，不要输出任何其他文字`;
+}
+
+function buildCommonContext(common) {
+  return `## 项目基本信息
+- 项目名称：${common.project_name || ''}
+- 城市所在地：${common.city || ''}
+- 项目定位：${common.positioning || ''}
+- 推广定调：${common.promotion_tone || ''}
+- 目标客群：${common.target_audience || ''}
+- 年度主题词：${common.annual_theme || '（由AI建议）'}
+- 营销背景：${common.marketing_bg || ''}
+- 当前日期：${getCurrentDate()}`;
+}
+
+function buildFormatPrompt(common, specific) {
+  let brandsText = '';
+  for (let i = 0; i < (specific.brands || []).length; i++) {
+    const b = specific.brands[i];
+    brandsText += `\n${i+1}. 品牌名称：${b.name || ''} | 业态类型：${b.category || ''} | 品牌标签：${b.tag || ''} | 开业时间：${b.open_date || ''} | 是否首店：${b.is_first_store ? '是' : '否'}`;
+    if (b.price_range) brandsText += ` | 客单价：${b.price_range}`;
+    if (b.sp_direction) brandsText += ` | SP货盘方向：${b.sp_direction}`;
+  }
+
+  return `${buildCommonContext(common)}
+
+## 超级业态定位
+${specific.format_positioning || ''}
+
+## 品牌清单
+${brandsText}
+
+## 生成要求
+请严格按照知识库规则，生成超级业态打样表。要求：
+1. 已过去的月份填"/"
+2. 每个T轴单元格用【】标题+正文结构
+3. 模块1（话题推演）必须是最丰富的叙事引擎
+4. M1讲故事，M2讲渠道，不可混淆
+5. 所有字体统一黑色
+
+输出严格JSON格式（不要输出其他任何文字）：
+{
+  "narrative_engine": "叙事引擎完整描述",
+  "modules": [
+    {
+      "name": "模块D列名称（完整名称，如知识库所列）",
+      "section": "线上 或 线下",
+      "e_content": "E列策略概述内容",
+      "months": {
+        "1": "1月内容（已过填/）",
+        "2": "2月内容",
+        "3": "...",
+        "4": "...",
+        "5": "...",
+        "6": "...",
+        "7": "...",
+        "8": "...",
+        "9": "...",
+        "10": "...",
+        "11": "...",
+        "12": "..."
+      }
+    }
+  ]
+}
+必须输出完整的8个模块，每个模块12个月。`;
+}
+
+function buildScenePrompt(common, specific) {
+  return `${buildCommonContext(common)}
+
+## 超级场景信息
+- 场景名称：${specific.scene_name || ''}
+- 场景位置：${specific.scene_location || ''}
+- 主要构成：${specific.scene_composition || ''}
+- 核心定位：${specific.scene_positioning || ''}
+- 亮相时间：${specific.debut_date || ''}
+- 变装节点：${specific.transform_nodes || ''}
+
+## 生成要求
+请严格按照知识库规则，生成超级场景打样表。要求：
+1. 按场景生命周期（种下期→亮相期→生长期）展开三幕叙事
+2. 已过去的时间阶段填"/"
+3. M1讲故事，M2讲渠道，不可混淆
+4. 场景专属话题必须原创（不可套用已注册话题）
+
+输出严格JSON格式（不要输出其他任何文字）：
+{
+  "narrative_engine": "叙事引擎",
+  "scene_topic": "#场景专属话题",
+  "modules": [
+    {
+      "name": "模块D列名称",
+      "section": "线上 或 线下",
+      "e_content": "E列策略概述",
+      "phases": {
+        "种下期-规划": "内容",
+        "种下期-施工": "内容",
+        "种下期-预热": "内容",
+        "亮相期-亮相月": "内容",
+        "亮相期-发酵": "内容",
+        "生长期-变装1": "内容",
+        "生长期-变装2": "内容",
+        "生长期-日常": "内容"
+      }
+    }
+  ]
+}
+必须输出完整的8个模块。`;
+}
+
+function buildIpPrompt(common, specific) {
+  let activitiesText = '';
+  for (let i = 0; i < (specific.activities || []).length; i++) {
+    const a = specific.activities[i];
+    activitiesText += `\n${i+1}. 活动名称：${a.name || ''} | 时间区间：${a.date_range || ''} | 活动天数：${a.duration || ''}天 | 活动级别：${a.level || ''}`;
+    if (a.pr_direction) activitiesText += ` | 月度PR活动方向：${a.pr_direction}`;
+  }
+
+  return `${buildCommonContext(common)}
+
+## IP活动清单
+${activitiesText}
+
+## 生成要求
+请严格按照知识库规则，生成IP活动打样表。要求：
+1. 年度IP用T-15预热，季度IP用T-10紧凑节奏
+2. 已过期的活动跳过不打样
+3. M1讲故事（三幕叙事），M3讲渠道（9层矩阵），不可混淆
+4. 每个T轴格用【】标题+正文
+
+输出严格JSON格式（不要输出其他任何文字）：
+{
+  "blocks": [
+    {
+      "activity_name": "活动名称（含时间和级别）",
+      "narrative_engine": "叙事引擎",
+      "t_axis_headers": ["F列表头", "G列表头", "H列表头", "I列表头（活动中）", "J列表头（活动后）"],
+      "modules": [
+        {
+          "name": "模块D列名称",
+          "section": "线上 或 线下",
+          "e_content": "E列策略概述",
+          "columns": ["F列内容", "G列内容", "H列内容", "I列内容", "J列内容"]
+        }
+      ]
+    }
+  ]
+}
+每个block必须有完整7个模块。`;
+}
+
+function buildBrandPrompt(common, specific) {
+  let brandsText = '';
+  for (let i = 0; i < (specific.brands || []).length; i++) {
+    const b = specific.brands[i];
+    brandsText += `\n${i+1}. 品牌名称：${b.name || ''} | 开业时间：${b.open_date || ''} | 品牌定位：${b.positioning || ''} | 品牌风格：${b.style || ''} | 是否首店：${b.is_first_store ? '是' : '否'} | 客单价：${b.price_range || ''} | 营销策略：${b.strategy || ''}`;
+    if (b.target_audience) brandsText += ` | 目标客群：${b.target_audience}`;
+    if (b.opening_activity) brandsText += ` | 开业活动：${b.opening_activity}`;
+  }
+
+  return `${buildCommonContext(common)}
+
+## 品牌清单
+${brandsText}
+
+## 生成要求
+请严格按照知识库规则，生成品牌推广打样表。要求：
+1. 按品牌生命周期（签约→造势→锁客→冲刺→开业→爆单→稳场→长效）展开
+2. 模块1（品牌卖点与话题造势）是叙事引擎，必须最丰富
+3. M1讲故事，M2讲渠道，不可混淆
+4. PR=沉浸式创意活动，不是媒体公关
+
+输出严格JSON格式（不要输出其他任何文字）：
+{
+  "blocks": [
+    {
+      "brand_name": "品牌名称",
+      "narrative_engine": "叙事引擎",
+      "modules": [
+        {
+          "name": "模块D列名称",
+          "section": "线上 或 线下",
+          "e_content": "E列策略概述",
+          "columns": {
+            "F": "合同签约期内容",
+            "G": "T-21至T-15造势期",
+            "H": "T-14至T-4锁客期",
+            "I": "T-3至T-1冲刺期",
+            "J": "开业亮相引爆期",
+            "K": "T+1至T+3爆单期",
+            "L": "T+4至T+30稳场期",
+            "M": "T+30后长效经营"
+          }
+        }
+      ]
+    }
+  ]
+}
+每个品牌block必须有完整8个模块。`;
+}
+
+const PROMPT_BUILDERS = {
+  format: buildFormatPrompt,
+  scene: buildScenePrompt,
+  ip: buildIpPrompt,
+  brand: buildBrandPrompt,
+};
+
+// ============================================================
+// Excel Generation Functions
+// ============================================================
+function generateFormatExcel(data, common) {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([]);
+
+  const projectName = common.project_name || '项目';
+  const modules = data.modules || [];
+  const narrative = data.narrative_engine || '';
+
+  let rowIdx = 0;
+
+  // Title row
+  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 16 } });
+  ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
+    v: `${projectName} · 超级业态打样表（2026年度）`,
+    s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center', vertical: 'center' } }
+  };
+  rowIdx++;
+
+  // Header row
+  const headers = ['重点工作', '案例', '板块', '工作模块', '工作内容', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  const headerRow = headers.map(h => ({ v: h, s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } } }));
+  ws['!A' + (rowIdx + 1)] = headerRow[0];
+  for (let i = 1; i < headerRow.length; i++) {
+    ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = headerRow[i];
+  }
+  rowIdx++;
+
+  // Modules
+  const startRow = rowIdx;
+  for (let idx = 0; idx < modules.length; idx++) {
+    const mod = modules[idx];
+    const cellIdx = startRow + idx;
+
+    if (idx === 0) {
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: projectName, s: { font: { bold: true } } };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: `叙事引擎：${narrative}`, s: { alignment: { wrapText: true } } };
+    } else {
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: '' };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: '' };
+    }
+
+    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 2 })] = { v: mod.section || '' };
+    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 3 })] = { v: mod.name || '', s: { alignment: { wrapText: true } } };
+    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 })] = { v: mod.e_content || '', s: { alignment: { wrapText: true } } };
+
+    const months = mod.months || {};
+    for (let m = 1; m <= 12; m++) {
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 + m })] = { v: months[String(m)] || '/', s: { alignment: { wrapText: true } } };
+    }
+  }
+
+  // Merge cells
+  if (modules.length > 0) {
+    ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+    ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+  }
+
+  ws['!cols'] = [
+    { wch: 14 }, { wch: 30 }, { wch: 6 }, { wch: 20 }, { wch: 30 },
+    { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 },
+    { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, '超级业态运营方案');
+  XLSX.writeFile(wb, `${projectName}-超级业态运营方案.xlsx`);
+}
+
+function generateSceneExcel(data, common) {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([]);
+
+  const projectName = common.project_name || '项目';
+  const modules = data.modules || [];
+  const narrative = data.narrative_engine || '';
+  const topic = data.scene_topic || '';
+
+  let rowIdx = 0;
+
+  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 12 } });
+  ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
+    v: `${projectName} · 超级场景打样表（2026年度）`,
+    s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
+  };
+  rowIdx++;
+
+  const phaseHeaders = ['种下期-规划', '种下期-施工', '种下期-预热', '亮相期-亮相月', '亮相期-发酵', '生长期-变装1', '生长期-变装2', '生长期-日常'];
+  const headers = ['重点工作', '案例', '板块', '工作模块', '工作内容', ...phaseHeaders];
+  const headerRow = headers.map(h => ({ v: h, s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } } }));
+  for (let i = 0; i < headerRow.length; i++) {
+    ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = headerRow[i];
+  }
+  rowIdx++;
+
+  const startRow = rowIdx;
+  for (let idx = 0; idx < modules.length; idx++) {
+    const mod = modules[idx];
+    const cellIdx = startRow + idx;
+
+    if (idx === 0) {
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: projectName, s: { font: { bold: true } } };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: `叙事引擎：${narrative}\n场景话题：${topic}`, s: { alignment: { wrapText: true } } };
+    } else {
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: '' };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: '' };
+    }
+
+    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 2 })] = { v: mod.section || '' };
+    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 3 })] = { v: mod.name || '', s: { alignment: { wrapText: true } } };
+    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 })] = { v: mod.e_content || '', s: { alignment: { wrapText: true } } };
+
+    const phases = mod.phases || {};
+    for (let pi = 0; pi < phaseHeaders.length; pi++) {
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + pi })] = { v: phases[phaseHeaders[pi]] || '/', s: { alignment: { wrapText: true } } };
+    }
+  }
+
+  if (modules.length > 0) {
+    ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+    ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+  }
+
+  ws['!cols'] = [
+    { wch: 14 }, { wch: 30 }, { wch: 6 }, { wch: 18 }, { wch: 30 },
+    { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, '超级场景运营方案');
+  XLSX.writeFile(wb, `${projectName}-超级场景运营方案.xlsx`);
+}
+
+function generateIpExcel(data, common) {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([]);
+
+  const projectName = common.project_name || '项目';
+  const blocks = data.blocks || [];
+
+  let rowIdx = 0;
+
+  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 9 } });
+  ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
+    v: `${projectName} · IP活动打样表（2026年度）`,
+    s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
+  };
+  rowIdx++;
+
+  for (let bi = 0; bi < blocks.length; bi++) {
+    if (bi > 0) rowIdx++;
+
+    const block = blocks[bi];
+    const tHeaders = block.t_axis_headers || ['活动前(1)', '活动前(2)', '活动前(3)', '活动中', '活动后'];
+    const headers = ['重点工作', '案例', '板块', '工作模块', '工作内容', ...tHeaders];
+    const headerRow = headers.map(h => ({ v: h, s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } } }));
+    for (let i = 0; i < headerRow.length; i++) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = headerRow[i];
+    }
+    rowIdx++;
+
+    const startRow = rowIdx;
+    const modules = block.modules || [];
+    const narrative = block.narrative_engine || '';
+
+    for (let idx = 0; idx < modules.length; idx++) {
+      const mod = modules[idx];
+      const cellIdx = startRow + idx;
+
+      if (idx === 0) {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: block.activity_name || '', s: { font: { bold: true } } };
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: `叙事引擎：${narrative}`, s: { alignment: { wrapText: true } } };
+      } else {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: '' };
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: '' };
+      }
+
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 2 })] = { v: mod.section || '' };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 3 })] = { v: mod.name || '', s: { alignment: { wrapText: true } } };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 })] = { v: mod.e_content || '', s: { alignment: { wrapText: true } } };
+
+      const cols = mod.columns || [];
+      for (let ci = 0; ci < cols.length; ci++) {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + ci })] = { v: cols[ci] || '/', s: { alignment: { wrapText: true } } };
+      }
+    }
+
+    if (modules.length > 0) {
+      ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+      ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+    }
+  }
+
+  ws['!cols'] = [
+    { wch: 18 }, { wch: 30 }, { wch: 6 }, { wch: 20 }, { wch: 30 },
+    { wch: 35 }, { wch: 35 }, { wch: 35 }, { wch: 35 }, { wch: 35 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'IP活动运营方案');
+  XLSX.writeFile(wb, `${projectName}-IP活动运营方案.xlsx`);
+}
+
+function generateBrandExcel(data, common) {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([]);
+
+  const projectName = common.project_name || '项目';
+  const blocks = data.blocks || [];
+  const colHeaders = ['重点工作', '案例', '板块', '工作模块', '工作内容', '合同签约', 'T-21至T-15\n(造势)', 'T-14至T-4\n(锁客)', 'T-3至T-1\n(冲刺)', '开业亮相\n(引爆)', 'T+1至T+3\n(爆单)', 'T+4至T+30\n(稳场)', 'T+30后\n(长效经营)'];
+
+  let rowIdx = 0;
+
+  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 12 } });
+  ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
+    v: `${projectName} · 新品牌推广打样表（2026年度）`,
+    s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
+  };
+  rowIdx++;
+
+  for (let bi = 0; bi < blocks.length; bi++) {
+    if (bi > 0) rowIdx++;
+
+    const block = blocks[bi];
+    const headerRow = colHeaders.map(h => ({ v: h, s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center', wrapText: true } } }));
+    for (let i = 0; i < headerRow.length; i++) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = headerRow[i];
+    }
+    rowIdx++;
+
+    const startRow = rowIdx;
+    const modules = block.modules || [];
+    const narrative = block.narrative_engine || '';
+    const colKeys = ['F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'];
+
+    for (let idx = 0; idx < modules.length; idx++) {
+      const mod = modules[idx];
+      const cellIdx = startRow + idx;
+
+      if (idx === 0) {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: block.brand_name || '', s: { font: { bold: true } } };
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: `叙事引擎：${narrative}`, s: { alignment: { wrapText: true } } };
+      } else {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: '' };
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: '' };
+      }
+
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 2 })] = { v: mod.section || '' };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 3 })] = { v: mod.name || '', s: { alignment: { wrapText: true } } };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 })] = { v: mod.e_content || '', s: { alignment: { wrapText: true } } };
+
+      const cols = mod.columns || {};
+      for (let ci = 0; ci < colKeys.length; ci++) {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + ci })] = { v: cols[colKeys[ci]] || '/', s: { alignment: { wrapText: true } } };
+      }
+    }
+
+    if (modules.length > 0) {
+      ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+      ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+    }
+  }
+
+  ws['!cols'] = [
+    { wch: 14 }, { wch: 30 }, { wch: 6 }, { wch: 18 }, { wch: 30 },
+    { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, '新品牌推广运营方案');
+  XLSX.writeFile(wb, `${projectName}-新品牌推广运营方案.xlsx`);
+}
+
+const EXCEL_GENERATORS = {
+  format: generateFormatExcel,
+  scene: generateSceneExcel,
+  ip: generateIpExcel,
+  brand: generateBrandExcel,
+};
 
 // ============================================================
 // Reusable Components
@@ -181,7 +1165,7 @@ function CommonFields({ common, setCommon }) {
           <input placeholder="如：青年引力场、城市新生力" value={common.annual_theme} onChange={e => update('annual_theme', e.target.value)} />
         </FormField>
         <FormField label="营销背景" required fullWidth hint="城市消费特征+项目核心竞争背景，3-5句话">
-          <textarea placeholder="衢州为四省通衢的区域中心城市，常住人口约230万，城区商业以传统百货为主，缺乏体验式商业综合体。恒太城为衢州首个定位年轻潮流的购物中心，填补城市商业空白……" value={common.marketing_bg} onChange={e => update('marketing_bg', e.target.value)} />
+          <textarea placeholder="衢州为四省通衢的区域中心城市，常住人口约230万，城区商业以传统百货为主，缺乏体验式商业综合体。恒太城为衢州首个定位年轻潮流的购物中心……" value={common.marketing_bg} onChange={e => update('marketing_bg', e.target.value)} />
         </FormField>
       </div>
     </div>
@@ -189,7 +1173,7 @@ function CommonFields({ common, setCommon }) {
 }
 
 // ============================================================
-// Tab 1: 超级业态运营方案
+// Tab Components
 // ============================================================
 function FormatTab({ specific, setSpecific }) {
   const brands = specific.brands || [{ ...EMPTY_FORMAT_BRAND }];
@@ -208,7 +1192,7 @@ function FormatTab({ specific, setSpecific }) {
     <div className="card">
       <div className="card-title"><div className="icon">🏪</div> 超级业态运营方案</div>
       <div className="form-grid" style={{marginBottom: 20}}>
-        <FormField label="超级业态定位" required fullWidth hint="明确业态核心方向，如：超级美食中心、夜经济中心、零售中心、儿童休闲娱乐中心">
+        <FormField label="超级业态定位" required fullWidth hint="明确业态核心方向">
           <input placeholder="超级美食中心" value={specific.format_positioning || ''} onChange={e => setSpecific(prev => ({ ...prev, format_positioning: e.target.value }))} />
         </FormField>
       </div>
@@ -268,9 +1252,6 @@ function FormatTab({ specific, setSpecific }) {
   );
 }
 
-// ============================================================
-// Tab 2: 超级场景运营方案
-// ============================================================
 function SceneTab({ specific, setSpecific }) {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -326,9 +1307,6 @@ function SceneTab({ specific, setSpecific }) {
   );
 }
 
-// ============================================================
-// Tab 3: IP活动运营方案
-// ============================================================
 function IpTab({ specific, setSpecific }) {
   const activities = specific.activities || [{ ...EMPTY_IP_ACTIVITY }];
   const updateActivity = (i, key, val) => {
@@ -386,9 +1364,6 @@ function IpTab({ specific, setSpecific }) {
   );
 }
 
-// ============================================================
-// Tab 4: 新品牌推广运营方案
-// ============================================================
 function BrandTab({ specific, setSpecific }) {
   const brands = specific.brands || [{ ...EMPTY_BRAND_ITEM }];
   const updateBrand = (i, key, val) => {
@@ -428,7 +1403,7 @@ function BrandTab({ specific, setSpecific }) {
             <FormField label="品牌定位" required hint="品牌的核心定位描述">
               <input placeholder="衢州首家人均200+高端餐饮" value={b.positioning} onChange={e => updateBrand(i, 'positioning', e.target.value)} />
             </FormField>
-            <FormField label="品牌风格" required hint="帮助AI理解品牌特征">
+            <FormField label="品牌风格" required>
               <select value={b.style} onChange={e => updateBrand(i, 'style', e.target.value)}>
                 <option value="">请选择</option>
                 <option value="城市首店">城市首店</option>
@@ -450,13 +1425,13 @@ function BrandTab({ specific, setSpecific }) {
             <FormField label="客单价范围" required hint="用于推导SP货盘方向">
               <input placeholder="人均200+" value={b.price_range} onChange={e => updateBrand(i, 'price_range', e.target.value)} />
             </FormField>
-            <FormField label="营销策略" required fullWidth hint="品牌的核心营销方向和打法">
+            <FormField label="营销策略" required fullWidth>
               <input placeholder="以口碑和品质感打开市场，联动美食矩阵其他品牌做集群效应" value={b.strategy} onChange={e => updateBrand(i, 'strategy', e.target.value)} />
             </FormField>
-            <FormField label="目标客群" optional hint="品牌的核心客群画像">
+            <FormField label="目标客群" optional>
               <input placeholder="商务宴请、品质约会、家庭聚餐" value={b.target_audience} onChange={e => updateBrand(i, 'target_audience', e.target.value)} />
             </FormField>
-            <FormField label="开业活动" optional hint="如已有方案直接填入；没有则由AI根据客单价和客群规划">
+            <FormField label="开业活动" optional fullWidth>
               <input placeholder="开业首日VIP品鉴会+满减活动+KOL探店" value={b.opening_activity} onChange={e => updateBrand(i, 'opening_activity', e.target.value)} />
             </FormField>
           </div>
@@ -466,82 +1441,56 @@ function BrandTab({ specific, setSpecific }) {
   );
 }
 
-// ============================================================
-// Main App
-// ============================================================
-// ============================================================
-// Preview Panel Component
-// ============================================================
 function PreviewPanel({ result, onClose }) {
   if (!result) return null;
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(`/api/download/${result.file_id}`);
-      if (!response.ok) throw new Error('下载失败');
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = result.filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      alert('下载失败：' + err.message);
+  const handleDownload = () => {
+    if (result.downloadFn) {
+      result.downloadFn();
+      onClose();
     }
   };
 
-  const preview = result.preview || {};
-  const sections = preview.sections || [];
+  const sections = result.preview?.sections || [];
 
   return (
     <div className="preview-panel">
       <div className="preview-header">
-        <h3>方案生成完成</h3>
+        <h3>✅ 生成成功！</h3>
         <div className="preview-actions">
-          <span className="preview-filename">{result.filename}</span>
-          <button className="btn-download" onClick={handleDownload}>
-            下载 Excel
-          </button>
-          <button className="btn-close-preview" onClick={onClose}>关闭预览</button>
+          <button className="btn-download" onClick={handleDownload}>⬇️ 下载 Excel</button>
+          <button className="btn-close-preview" onClick={onClose}>关闭</button>
         </div>
       </div>
       <div className="preview-body">
-        {sections.length === 0 ? (
-          <p style={{color: '#6b7280', textAlign: 'center', padding: '20px'}}>Excel 已生成，点击上方按钮下载</p>
-        ) : (
-          sections.map((section, si) => (
-            <div key={si} className="preview-section">
-              <div className="preview-section-title">
-                <span>{section.title}</span>
+        {sections.map((section, sidx) => (
+          <div key={sidx} className="preview-section">
+            <div className="preview-section-title">📄 {section.title}</div>
+            <table className="preview-table">
+              <thead>
+                <tr>
+                  <th>模块</th>
+                  <th>时间/阶段</th>
+                  <th>内容摘要</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(section.rows || []).slice(0, 5).map((row, ridx) => (
+                  <tr key={ridx}>
+                    <td>{row.module}</td>
+                    <td>{row.time}</td>
+                    <td>{row.content}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {section.rows && section.rows.length > 5 && (
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 8 }}>
+                还有 {section.rows.length - 5} 条数据，已在Excel中完整显示
               </div>
-              {section.rows && section.rows.length > 0 ? (
-                <table className="preview-table">
-                  <thead>
-                    <tr>
-                      <th style={{width: '15%'}}>模块</th>
-                      <th style={{width: '15%'}}>时间轴</th>
-                      <th>内容预览</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {section.rows.map((row, ri) => (
-                      <tr key={ri}>
-                        <td>{row.module}</td>
-                        <td>{row.time}</td>
-                        <td>{row.content}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p style={{color: '#9ca3af', fontSize: '13px'}}>暂无预览数据</p>
-              )}
-            </div>
-          ))
-        )}
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -551,103 +1500,180 @@ function PreviewPanel({ result, onClose }) {
 // Main App
 // ============================================================
 function App() {
-  const [apiKey, setApiKey] = useState('');
   const [activeTab, setActiveTab] = useState('format');
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ text: '', type: '' });
-  const [previewResult, setPreviewResult] = useState(null);
-
   const [common, setCommon] = useState({
-    project_name: '', city: '', positioning: '', promotion_tone: '',
-    target_audience: '', annual_theme: '', marketing_bg: ''
+    project_name: '',
+    city: '',
+    positioning: '',
+    promotion_tone: '',
+    target_audience: '',
+    annual_theme: '',
+    marketing_bg: ''
   });
+  const [specific, setSpecific] = useState({
+    format_positioning: '',
+    brands: [{ ...EMPTY_FORMAT_BRAND }],
+    scene_name: '',
+    scene_location: '',
+    scene_composition: '',
+    scene_positioning: '',
+    debut_date: '',
+    transform_nodes: '',
+    scene_image: null,
+    scene_image_preview: null,
+    activities: [{ ...EMPTY_IP_ACTIVITY }]
+  });
+  const [apiKey, setApiKey] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState('');
+  const [result, setResult] = useState(null);
 
-  // Each tab has its own specific state
-  const [formatSpecific, setFormatSpecific] = useState({ format_positioning: '', brands: [{ ...EMPTY_FORMAT_BRAND }] });
-  const [sceneSpecific, setSceneSpecific] = useState({});
-  const [ipSpecific, setIpSpecific] = useState({ activities: [{ ...EMPTY_IP_ACTIVITY }] });
-  const [brandSpecific, setBrandSpecific] = useState({ brands: [{ ...EMPTY_BRAND_ITEM }] });
-
-  const specificMap = {
-    format: { state: formatSpecific, setter: setFormatSpecific },
-    scene:  { state: sceneSpecific,  setter: setSceneSpecific },
-    ip:     { state: ipSpecific,     setter: setIpSpecific },
-    brand:  { state: brandSpecific,  setter: setBrandSpecific },
-  };
-
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = async () => {
     if (!apiKey.trim()) {
-      setStatus({ text: '请先在顶部输入Claude API Key', type: 'error' });
+      setStatus('请输入API Key');
       return;
     }
     if (!common.project_name.trim()) {
-      setStatus({ text: '请先填写项目名称', type: 'error' });
+      setStatus('请填写项目名称');
       return;
     }
 
     setLoading(true);
-    setPreviewResult(null);
-    setStatus({ text: '正在调用AI生成方案，预计需要1-3分钟，请耐心等待……', type: '' });
+    setStatus('正在生成中....');
 
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tab_type: activeTab,
-          common: common,
-          specific: specificMap[activeTab].state,
-          api_key: apiKey
-        })
-      });
+      const tabName = TABS.find(t => t.key === activeTab)?.name || '';
+      const systemPrompt = buildSystemPrompt(activeTab, tabName);
+      const userPrompt = PROMPT_BUILDERS[activeTab](common, specific);
 
-      const data = await response.json();
+      const requestBody = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 16000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      };
+
+      const response = await fetch(`${CLAUDE_PROXY_URL}/v1/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(requestBody)
+      });
 
       if (!response.ok) {
-        throw new Error(data.error || '生成失败');
+        const errData = await response.json();
+        throw new Error(errData.error?.message || `API error: ${response.status}`);
       }
 
-      // Show preview panel with result
-      setPreviewResult({
-        file_id: data.file_id,
-        filename: data.filename,
-        preview: data.preview
-      });
+      const data = await response.json();
+      const responseText = data.content[0].text;
 
-      setStatus({ text: '方案生成成功！请查看下方预览，确认后点击"下载Excel"按钮保存文件。', type: 'success' });
+      let jsonData;
+      try {
+        jsonData = JSON.parse(responseText);
+      } catch (e) {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          jsonData = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('无法解析API返回的JSON');
+        }
+      }
+
+      const excelGenerator = EXCEL_GENERATORS[activeTab];
+      const downloadFn = () => excelGenerator(jsonData, common);
+
+      // Build preview
+      let previewSections = [];
+      if (activeTab === 'format') {
+        const modules = jsonData.modules || [];
+        const rows = [];
+        modules.forEach(m => {
+          Object.keys(m.months || {}).forEach(month => {
+            rows.push({ module: m.name, time: `${month}月`, content: (m.months[month] || '').substring(0, 100) });
+          });
+        });
+        previewSections = [{ title: '超级业态打样表', rows }];
+      } else if (activeTab === 'scene') {
+        const modules = jsonData.modules || [];
+        const rows = [];
+        modules.forEach(m => {
+          Object.keys(m.phases || {}).forEach(phase => {
+            rows.push({ module: m.name, time: phase, content: (m.phases[phase] || '').substring(0, 100) });
+          });
+        });
+        previewSections = [{ title: '超级场景打样表', rows }];
+      } else if (activeTab === 'ip') {
+        const blocks = jsonData.blocks || [];
+        blocks.forEach(block => {
+          const rows = [];
+          (block.modules || []).forEach(m => {
+            (m.columns || []).forEach((col, idx) => {
+              rows.push({ module: m.name, time: `列${idx+1}`, content: (col || '').substring(0, 100) });
+            });
+          });
+          previewSections.push({ title: block.activity_name || '活动', rows });
+        });
+      } else if (activeTab === 'brand') {
+        const blocks = jsonData.blocks || [];
+        blocks.forEach(block => {
+          const rows = [];
+          (block.modules || []).forEach(m => {
+            const cols = m.columns || {};
+            Object.keys(cols).forEach(key => {
+              rows.push({ module: m.name, time: key, content: (cols[key] || '').substring(0, 100) });
+            });
+          });
+          previewSections.push({ title: block.brand_name || '品牌', rows });
+        });
+      }
+
+      setResult({ preview: { sections: previewSections }, downloadFn });
+      setStatus('✅ 生成成功！正在下载Excel...');
+      setTimeout(() => downloadFn(), 500);
     } catch (err) {
-      setStatus({ text: `${err.message}`, type: 'error' });
+      setStatus(`❌ 错误: ${err.message}`);
+      console.error(err);
     } finally {
       setLoading(false);
-    }
-  }, [apiKey, common, activeTab, specificMap]);
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'format': return <FormatTab specific={formatSpecific} setSpecific={setFormatSpecific} />;
-      case 'scene':  return <SceneTab specific={sceneSpecific} setSpecific={setSceneSpecific} />;
-      case 'ip':     return <IpTab specific={ipSpecific} setSpecific={setIpSpecific} />;
-      case 'brand':  return <BrandTab specific={brandSpecific} setSpecific={setBrandSpecific} />;
-      default: return null;
     }
   };
 
   return (
     <div>
       <div className="app-header">
-        <div>
-          <h1>恒太运营方案生成器</h1>
-          <div className="subtitle">填写硬内容 → 调用AI → 预览内容 → 下载Excel运营方案</div>
-        </div>
-        <div className="api-key-section">
-          <label>API Key：</label>
-          <input
-            className="api-key-input"
-            type="password"
-            placeholder="sk-ant-api03-..."
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-          />
+        <div className="header-content">
+          <div>
+            <h1>恒太运营方案生成器</h1>
+            <div className="subtitle">AI驱动的商业运营方案自动化生成系统</div>
+          </div>
+          <div className="api-config-section">
+            <div className="config-group">
+              <label>代理URL:</label>
+              <input
+                className="config-input"
+                placeholder="https://your-worker.workers.dev"
+                defaultValue={CLAUDE_PROXY_URL}
+                onChange={e => { CLAUDE_PROXY_URL = e.target.value; }}
+                style={{minWidth: 300}}
+              />
+            </div>
+            <div className="config-group">
+              <label>API Key:</label>
+              <input
+                type="password"
+                className="config-input"
+                placeholder="sk-ant-..."
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                style={{minWidth: 200}}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -659,25 +1685,27 @@ function App() {
             <button
               key={tab.key}
               className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`}
-              onClick={() => { setActiveTab(tab.key); setPreviewResult(null); }}
+              onClick={() => setActiveTab(tab.key)}
             >
               {tab.icon} {tab.name}
             </button>
           ))}
         </div>
 
-        {renderTabContent()}
+        {activeTab === 'format' && <FormatTab specific={specific} setSpecific={setSpecific} />}
+        {activeTab === 'scene' && <SceneTab specific={specific} setSpecific={setSpecific} />}
+        {activeTab === 'ip' && <IpTab specific={specific} setSpecific={setSpecific} />}
+        {activeTab === 'brand' && <BrandTab specific={specific} setSpecific={setSpecific} />}
 
         <div className="generate-section">
           <button className="btn-generate" onClick={handleGenerate} disabled={loading}>
-            {loading ? <><div className="spinner"></div> 正在生成中…</> : <>生成{TABS.find(t => t.key === activeTab)?.name}</>}
+            {loading ? <span className="spinner"></span> : '✨'}
+            {loading ? '生成中...' : '生成方案'}
           </button>
-          {status.text && <div className={`status-text ${status.type}`}>{status.text}</div>}
+          {status && <div className={`status-text ${status.includes('错误') || status.includes('❌') ? 'error' : status.includes('✅') ? 'success' : ''}`}>{status}</div>}
         </div>
 
-        {previewResult && (
-          <PreviewPanel result={previewResult} onClose={() => setPreviewResult(null)} />
-        )}
+        {result && <PreviewPanel result={result} onClose={() => setResult(null)} />}
       </div>
     </div>
   );
