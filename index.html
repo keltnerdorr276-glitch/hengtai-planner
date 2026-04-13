@@ -4401,8 +4401,8 @@ function App() {
       let jsonData;
       const repairJSON = (str) => {
         let s = str.trim();
-        // Remove ALL markdown code fences (opening and closing)
-        s = s.replace(/```(?:json)?/gi, '').trim();
+        // Remove ALL markdown code fences (any number of backticks, opening and closing)
+        s = s.replace(/`{3,}(?:json)?/gi, '').trim();
         // Extract outermost JSON object
         const m = s.match(/\{[\s\S]*\}/);
         if (m) s = m[0];
