@@ -866,8 +866,7 @@ function generateFormatExcel(data, common) {
   // Header row
   const headers = ['重点工作', '案例', '板块', '工作模块', '工作内容', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
   const headerRow = headers.map(h => ({ v: h, s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } } }));
-  ws['!A' + (rowIdx + 1)] = headerRow[0];
-  for (let i = 1; i < headerRow.length; i++) {
+  for (let i = 0; i < headerRow.length; i++) {
     ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = headerRow[i];
   }
   rowIdx++;
@@ -908,6 +907,8 @@ function generateFormatExcel(data, common) {
     { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }
   ];
 
+  const lastRow = startRow + modules.length - 1;
+  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(lastRow, 1), c: 16 } });
   XLSX.utils.book_append_sheet(wb, ws, '超级业态运营方案');
   XLSX.writeFile(wb, `${projectName}-超级业态运营方案.xlsx`);
 }
@@ -971,6 +972,8 @@ function generateSceneExcel(data, common) {
     { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }
   ];
 
+  const lastRowScene = startRow + modules.length - 1;
+  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(lastRowScene, 1), c: 12 } });
   XLSX.utils.book_append_sheet(wb, ws, '超级场景运营方案');
   XLSX.writeFile(wb, `${projectName}-超级场景运营方案.xlsx`);
 }
@@ -1040,6 +1043,7 @@ function generateIpExcel(data, common) {
     { wch: 35 }, { wch: 35 }, { wch: 35 }, { wch: 35 }, { wch: 35 }
   ];
 
+  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(rowIdx - 1, 1), c: 9 } });
   XLSX.utils.book_append_sheet(wb, ws, 'IP活动运营方案');
   XLSX.writeFile(wb, `${projectName}-IP活动运营方案.xlsx`);
 }
@@ -1109,6 +1113,7 @@ function generateBrandExcel(data, common) {
     { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }
   ];
 
+  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(rowIdx - 1, 1), c: 12 } });
   XLSX.utils.book_append_sheet(wb, ws, '新品牌推广运营方案');
   XLSX.writeFile(wb, `${projectName}-新品牌推广运营方案.xlsx`);
 }
@@ -1623,8 +1628,8 @@ function App() {
       let jsonData;
       const repairJSON = (str) => {
         let s = str.trim();
-        // Remove markdown code fences if present
-        s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+        // Remove ALL markdown code fences (opening and closing)
+        s = s.replace(/```(?:json)?/gi, '').trim();
         // Extract outermost JSON object
         const m = s.match(/\{[\s\S]*\}/);
         if (m) s = m[0];
@@ -1788,4 +1793,3 @@ ReactDOM.render(<App />, document.getElementById('root'));
 </script>
 </body>
 </html>
-
