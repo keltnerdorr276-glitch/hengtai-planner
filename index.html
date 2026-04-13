@@ -1573,14 +1573,39 @@ function App() {
       const responseText = data.content[0].text;
 
       let jsonData;
+      const repairJSON = (str) => {
+        let s = str.trim();
+        // Remove markdown code fences if present
+        s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+        // Extract outermost JSON object
+        const m = s.match(/\{[\s\S]*\}/);
+        if (m) s = m[0];
+        // Fix trailing commas before } or ]
+        s = s.replace(/,\s*([\}\]])/g, '$1');
+        // Fix unescaped newlines inside strings
+        s = s.replace(/"([^"]*?)"/g, (match) => {
+          return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+        });
+        return s;
+      };
       try {
         jsonData = JSON.parse(responseText);
-      } catch (e) {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          jsonData = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('无法解析API返回的JSON');
+      } catch (e1) {
+        try {
+          jsonData = JSON.parse(repairJSON(responseText));
+        } catch (e2) {
+          // Last resort: try to find and parse just the JSON object
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              jsonData = JSON.parse(repairJSON(jsonMatch[0]));
+            } catch (e3) {
+              console.error('JSON repair failed. Raw response:', responseText.slice(0, 2000));
+              throw new Error('AI返回的JSON格式有误，请重试一次。错误位置: ' + e1.message);
+            }
+          } else {
+            throw new Error('AI未返回有效JSON，请重试');
+          }
         }
       }
 
