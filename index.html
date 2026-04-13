@@ -3111,8 +3111,18 @@ ${brandsText}
 必须输出完整的8个模块，每个模块12个月。`;
 }
 
+function isDebutInPast(dateStr) {
+  if (!dateStr) return false;
+  const m = dateStr.match(/(\d{4})/);
+  if (!m) return false;
+  const year = parseInt(m[1]);
+  return year < 2026;
+}
+
 function buildScenePrompt(common, specific) {
-  return `${buildCommonContext(common)}
+  const existing = isDebutInPast(specific.debut_date);
+
+  const commonPart = `${buildCommonContext(common)}
 
 ## 超级场景信息
 - 场景名称：${specific.scene_name || ''}
@@ -3121,25 +3131,10 @@ function buildScenePrompt(common, specific) {
 - 核心定位：${specific.scene_positioning || ''}
 - 亮相时间：${specific.debut_date || ''}
 - 变装节点：${specific.transform_nodes || ''}
+- 场景状态：${existing ? '已亮相（' + specific.debut_date + '已建成，2026年全年为常态化运营）' : '待亮相（新建场景）'}
 
 ## 生成要求
 请严格按照知识库规则，生成超级场景打样表。
-
-### ⚠️ 日期铁律（最高优先级）
-用户输入的亮相时间是【${specific.debut_date || ''}】，你必须 **原样使用这个日期** 进行T轴推算。
-- 禁止将年份修改为2026年或任何其他年份
-- 禁止对用户输入的日期做任何"纠正"或"调整"
-- 即使该日期是过去的日期（如2024年），也必须原样使用
-- 这是一个已存在的空间场景，亮相时间就是用户填写的时间，不是新建项目
-- 示例：如果用户输入"2024年10月1日"，则亮相日就是2024年10月1日，T-30就是从2024年10月1日往前推30天
-
-### ⚠️ 已亮相场景规则（同样是最高优先级）
-当亮相时间在过去（早于当前日期2026年4月），说明该场景已经亮相并持续运营中。此时：
-- **所有T轴阶段都必须有完整内容**，不得填"/"或"——（已过）"
-- 打样表是该场景从策划到常态化运营的**完整运营参考方案**
-- 每个T轴格子都要有详尽的策略和执行内容，就像枣庄参考表一样
-- "常态化运营"列尤其重要，要写出2026年全年的持续运营计划
-- 这是空间场景的打样标准文档，不是只看未来的行动清单
 
 ### 表格列结构（严格遵守）
 - A列（26年重点工作）：固定填"超级场景"
@@ -3156,9 +3151,68 @@ function buildScenePrompt(common, specific) {
 模块5 name = "5. 直播与带货\\n洽谈专属促销货盘、早鸟预售直播、现场实景走播"
 模块6 name = "6. 场景工程交付与保障\\n打围施工、绿植/亮化安装、深度保洁、安全排查"
 模块7 name = "7. 重点品牌与商户联动\\n相关业态重点商户开发专属套餐、排队服务排查、备货管理"
-模块8 name = "8. PR活动与市集外摆\\n异业、圈层、NPC、节日主题活动及市集、快闪商户招募"
+模块8 name = "8. PR活动与市集外摆\\n异业、圈层、NPC、节日主题活动及市集、快闪商户招募"`;
 
-### T轴要求（根据亮相时间【${specific.debut_date || ''}】原样推算日期，禁止修改年份）
+  if (existing) {
+    // ========== 已亮相场景：月度结构（1-12月） ==========
+    return `${commonPart}
+
+### ⚠️ 已亮相场景规则（最高优先级）
+该场景于【${specific.debut_date || ''}】已亮相，到2026年已进入常态化运营阶段。
+- 2026年全年12个月都是常态化运营，每个月都必须有完整的运营内容
+- 变装节点（${specific.transform_nodes || '暑期/国庆/春节'}）是年度中的高光事件，在对应月份要有变装前预热、变装亮相、变装后发酵的内容
+- 非变装月份也要有日常运营内容（话题更新、KOC打卡、会员活动、口碑维护等）
+- **禁止任何月份填"/"**，每个月都必须有实质内容
+- 1-3月虽然已过，但仍需写出完整运营规划（这是年度方案文档，不是行动日历）
+
+### 时间轴要求
+时间轴为2026年1-12月，共12列。
+- 变装节点所在月份：写变装主题+预热/引爆/发酵的完整计划
+- 非变装月份：写日常常态化运营内容（话题轮换、内容产出、会员触达、口碑维护等）
+- 每个月的内容用【创意标题】+详细执行内容
+
+### 内容要求
+1. 以场景的持续生命力为主线展开，每月都有新鲜感
+2. 变装节点是年度高潮，要有完整的预热→引爆→发酵节奏
+3. 每个月份格用【创意标题】+详细执行内容，模块1每月≥60字，变装月≥100字
+4. M1讲故事，M2讲渠道，严禁混淆
+5. 场景专属话题必须原创
+
+输出严格JSON格式（不要输出其他任何文字）：
+{
+  "scene_mode": "existing",
+  "narrative_engine": "叙事引擎完整描述（围绕场景全年持续运营+变装节点展开）",
+  "scene_topic": "#场景专属话题",
+  "modules": [
+    {
+      "name": "1. 话题推演与故事线\\n核心营销叙事与情绪价值挖掘",
+      "section": "线上",
+      "e_content": "E列具体工作内容（全年运营策略+变装节点叙事逻辑，≥150字）",
+      "months": {
+        "1": "1月运营内容",
+        "2": "2月运营内容",
+        "3": "3月运营内容",
+        "4": "4月运营内容",
+        "5": "5月运营内容",
+        "6": "6月运营内容",
+        "7": "7月运营内容",
+        "8": "8月运营内容",
+        "9": "9月运营内容",
+        "10": "10月运营内容",
+        "11": "11月运营内容",
+        "12": "12月运营内容"
+      }
+    }
+  ]
+}
+必须输出完整的8个模块，每个模块12个月内容，不得有任何月份为空或填"/"。
+8个模块的name字段必须严格使用上面【D列8个模块的固定文本】中的内容，一字不改。
+模块1-5的section为"线上"，模块6-8的section为"线下"。`;
+  } else {
+    // ========== 新场景：T轴结构（10列） ==========
+    return `${commonPart}
+
+### T轴要求（根据亮相时间【${specific.debut_date || ''}】推算日期）
 T轴共10列，每列包含标题名称+具体日期范围：
 1. 图纸定稿及进场施工（内部阶段）
 2. T-30至T-22（倒数第4周）— 从亮相日往前推30天至22天
@@ -3174,12 +3228,13 @@ T轴共10列，每列包含标题名称+具体日期范围：
 ### 内容要求
 1. 按种下期→亮相期→生长期三幕叙事展开
 2. 每个T轴格用【创意标题】+详细执行内容，模块1每格≥80字，亮相格≥120字
-3. 所有T轴阶段都必须生成完整内容，**禁止因为日期在过去就填"/"**（打样表是完整的运营方案，不是行动日历）
+3. 已过去的T轴阶段填"/"
 4. M1讲故事，M2讲渠道，严禁混淆
 5. 场景专属话题必须原创
 
 输出严格JSON格式（不要输出其他任何文字）：
 {
+  "scene_mode": "new",
   "narrative_engine": "叙事引擎完整描述",
   "scene_topic": "#场景专属话题",
   "t_axis_headers": [
@@ -3206,6 +3261,7 @@ T轴共10列，每列包含标题名称+具体日期范围：
 必须输出完整的8个模块，每个模块10个T轴内容。
 8个模块的name字段必须严格使用上面【D列8个模块的固定文本】中的内容，一字不改。
 模块1-5的section为"线上"，模块6-8的section为"线下"。`;
+  }
 }
 
 function buildIpPrompt(common, specific) {
@@ -3426,132 +3482,215 @@ function generateFormatExcel(data, common) {
 }
 
 function generateSceneExcel(data, common) {
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([]);
+  const isExisting = data.scene_mode === 'existing' || (data.modules && data.modules[0] && data.modules[0].months);
 
-  const projectName = common.project_name || '项目';
-  const modules = data.modules || [];
-  const narrative = data.narrative_engine || '';
-  const topic = data.scene_topic || '';
-  const tHeaders = data.t_axis_headers || [
-    '图纸定稿及进场施工', 'T-30至T-22', 'T-21至T-15', 'T-14至T-8',
-    'T-7至T-1', '开业亮相', 'T+1至T+3天', 'T+7至T+14天', 'T15至T30天', '常态化运营'
-  ];
-  const totalCols = 5 + tHeaders.length;
+  if (isExisting) {
+    // ========== 已亮相场景：月度结构（复用超级业态的月度布局） ==========
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([]);
+    const projectName = common.project_name || '项目';
+    const modules = data.modules || [];
+    const totalCols = 17; // A-E + 12 months
 
-  let rowIdx = 0;
-  if(!ws['!merges'])ws['!merges']=[];
+    let rowIdx = 0;
+    if(!ws['!merges'])ws['!merges']=[];
 
-  // Title row
-  ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: totalCols - 1 } });
-  ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
-    v: `${projectName} · 超级场景打样表（2026年度）`,
-    s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
-  };
-  rowIdx++;
-
-  // Category header row (前期/亮相/后期) - Row 2
-  const fixedHeaders = ['26年重点工作', '案例', '阵地', '工作模块', '具体工作内容\n(执行动作说明)'];
-  for (let i = 0; i < fixedHeaders.length; i++) {
-    ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = {
-      v: fixedHeaders[i],
-      s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center', wrapText: true } }
+    // Title row
+    ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: totalCols - 1 } });
+    ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
+      v: `${projectName} · 超级场景打样表（2026年度·常态化运营）`,
+      s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
     };
-    // Merge fixed headers across 2 rows
-    ws['!merges'].push({ s: { r: rowIdx, c: i }, e: { r: rowIdx + 1, c: i } });
-  }
-  // "前期" spanning first 5 T-axis columns
-  const preCount = Math.min(5, tHeaders.length);
-  ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 })] = {
-    v: '前期', s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
-  };
-  if (preCount > 1) ws['!merges'].push({ s: { r: rowIdx, c: 5 }, e: { r: rowIdx, c: 5 + preCount - 1 } });
-  // "亮相"
-  if (tHeaders.length > 5) {
-    ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 + preCount })] = {
-      v: '亮相', s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
-    };
-  }
-  // "后期"
-  if (tHeaders.length > 6) {
-    ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 + preCount + 1 })] = {
-      v: '后期', s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
-    };
-    if (tHeaders.length > 7) ws['!merges'].push({ s: { r: rowIdx, c: 5 + preCount + 1 }, e: { r: rowIdx, c: totalCols - 1 } });
-  }
-  rowIdx++;
+    rowIdx++;
 
-  // Specific T-axis header row - Row 3
-  for (let i = 0; i < tHeaders.length; i++) {
-    ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 + i })] = {
-      v: tHeaders[i],
-      s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center', wrapText: true } }
-    };
-  }
-  rowIdx++;
-
-  // Data rows
-  const startRow = rowIdx;
-  const sceneName = common.scene_name || data.scene_name || projectName;
-
-  for (let idx = 0; idx < modules.length; idx++) {
-    const mod = modules[idx];
-    const cellIdx = startRow + idx;
-
-    // A: 26年重点工作 (first row only)
-    if (idx === 0) {
-      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: '超级场景', s: { font: { bold: true } } };
-      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: sceneName, s: { alignment: { wrapText: true } } };
+    // Category header row
+    const fixedHeaders = ['26年重点工作', '案例', '阵地', '工作模块', '具体工作内容\n(执行动作说明)'];
+    for (let i = 0; i < fixedHeaders.length; i++) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = {
+        v: fixedHeaders[i],
+        s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center', wrapText: true } }
+      };
+      ws['!merges'].push({ s: { r: rowIdx, c: i }, e: { r: rowIdx + 1, c: i } });
     }
+    // "2026年时间轴" spanning month columns
+    ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 })] = {
+      v: '2026年度常态化运营时间轴', s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
+    };
+    ws['!merges'].push({ s: { r: rowIdx, c: 5 }, e: { r: rowIdx, c: 16 } });
+    rowIdx++;
 
-    // C: 阵地
-    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 2 })] = { v: mod.section || '线上' };
+    // Month header row
+    const monthHeaders = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    for (let i = 0; i < monthHeaders.length; i++) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 + i })] = {
+        v: monthHeaders[i],
+        s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
+      };
+    }
+    rowIdx++;
 
-    // D: 工作模块 (已含序号+名称+描述)
-    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 3 })] = { v: mod.name || '', s: { alignment: { wrapText: true } } };
+    // Data rows
+    const startRow = rowIdx;
+    const sceneName = common.scene_name || data.scene_name || projectName;
 
-    // E: 具体工作内容
-    ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 })] = { v: mod.e_content || '', s: { alignment: { wrapText: true } } };
+    for (let idx = 0; idx < modules.length; idx++) {
+      const mod = modules[idx];
+      const cellIdx = startRow + idx;
 
-    // T-axis columns (use t_axis array or fallback to phases object)
-    const tAxisData = mod.t_axis || [];
-    if (tAxisData.length > 0) {
-      for (let ti = 0; ti < tHeaders.length; ti++) {
-        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + ti })] = { v: tAxisData[ti] || '/', s: { alignment: { wrapText: true } } };
+      if (idx === 0) {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: '超级场景', s: { font: { bold: true } } };
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: sceneName, s: { alignment: { wrapText: true } } };
       }
-    } else {
-      // Fallback: try phases object
-      const phases = mod.phases || {};
-      const phaseKeys = Object.keys(phases);
-      for (let ti = 0; ti < tHeaders.length; ti++) {
-        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + ti })] = { v: phases[phaseKeys[ti]] || '/', s: { alignment: { wrapText: true } } };
+
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 2 })] = { v: mod.section || '线上' };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 3 })] = { v: mod.name || '', s: { alignment: { wrapText: true } } };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 })] = { v: mod.e_content || '', s: { alignment: { wrapText: true } } };
+
+      // Month columns
+      const months = mod.months || {};
+      for (let mi = 0; mi < 12; mi++) {
+        const mKey = String(mi + 1);
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + mi })] = {
+          v: months[mKey] || '', s: { alignment: { wrapText: true } }
+        };
       }
     }
-  }
 
-  // Merge A and B columns
-  if (modules.length > 0) {
-    ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
-    ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
-
-    // Merge C column: 线上 (modules 1-5, idx 0-4) and 线下 (modules 6-8, idx 5-7)
-    const onlineEnd = Math.min(4, modules.length - 1);
-    if (onlineEnd > 0) {
-      ws['!merges'].push({ s: { r: startRow, c: 2 }, e: { r: startRow + onlineEnd, c: 2 } });
+    // Merge A and B columns
+    if (modules.length > 0) {
+      ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+      ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+      // Merge C column: 线上 (modules 1-5) and 线下 (modules 6-8)
+      const onlineEnd = Math.min(4, modules.length - 1);
+      if (onlineEnd > 0) {
+        ws['!merges'].push({ s: { r: startRow, c: 2 }, e: { r: startRow + onlineEnd, c: 2 } });
+      }
+      if (modules.length > 5) {
+        ws['!merges'].push({ s: { r: startRow + 5, c: 2 }, e: { r: startRow + modules.length - 1, c: 2 } });
+      }
     }
-    if (modules.length > 5) {
-      ws['!merges'].push({ s: { r: startRow + 5, c: 2 }, e: { r: startRow + modules.length - 1, c: 2 } });
+
+    ws['!cols'] = [
+      { wch: 14 }, { wch: 22 }, { wch: 8 }, { wch: 28 }, { wch: 40 },
+      ...monthHeaders.map(() => ({ wch: 30 }))
+    ];
+
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(startRow + modules.length - 1, 3), c: totalCols - 1 } });
+    XLSX.utils.book_append_sheet(wb, ws, '超级场景运营方案');
+    XLSX.writeFile(wb, `${projectName}-超级场景运营方案.xlsx`);
+
+  } else {
+    // ========== 新场景：T轴结构（10列） ==========
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([]);
+    const projectName = common.project_name || '项目';
+    const modules = data.modules || [];
+    const tHeaders = data.t_axis_headers || [
+      '图纸定稿及进场施工', 'T-30至T-22', 'T-21至T-15', 'T-14至T-8',
+      'T-7至T-1', '开业亮相', 'T+1至T+3天', 'T+7至T+14天', 'T15至T30天', '常态化运营'
+    ];
+    const totalCols = 5 + tHeaders.length;
+
+    let rowIdx = 0;
+    if(!ws['!merges'])ws['!merges']=[];
+
+    // Title row
+    ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: totalCols - 1 } });
+    ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
+      v: `${projectName} · 超级场景打样表（2026年度）`,
+      s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
+    };
+    rowIdx++;
+
+    // Category header row (前期/亮相/后期)
+    const fixedHeaders = ['26年重点工作', '案例', '阵地', '工作模块', '具体工作内容\n(执行动作说明)'];
+    for (let i = 0; i < fixedHeaders.length; i++) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: i })] = {
+        v: fixedHeaders[i],
+        s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center', wrapText: true } }
+      };
+      ws['!merges'].push({ s: { r: rowIdx, c: i }, e: { r: rowIdx + 1, c: i } });
     }
+    const preCount = Math.min(5, tHeaders.length);
+    ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 })] = {
+      v: '前期', s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
+    };
+    if (preCount > 1) ws['!merges'].push({ s: { r: rowIdx, c: 5 }, e: { r: rowIdx, c: 5 + preCount - 1 } });
+    if (tHeaders.length > 5) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 + preCount })] = {
+        v: '亮相', s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
+      };
+    }
+    if (tHeaders.length > 6) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 + preCount + 1 })] = {
+        v: '后期', s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center' } }
+      };
+      if (tHeaders.length > 7) ws['!merges'].push({ s: { r: rowIdx, c: 5 + preCount + 1 }, e: { r: rowIdx, c: totalCols - 1 } });
+    }
+    rowIdx++;
+
+    // T-axis header row
+    for (let i = 0; i < tHeaders.length; i++) {
+      ws[XLSX.utils.encode_cell({ r: rowIdx, c: 5 + i })] = {
+        v: tHeaders[i],
+        s: { font: { bold: true }, fill: { fgColor: { rgb: 'FFD9E2F3' } }, alignment: { horizontal: 'center', wrapText: true } }
+      };
+    }
+    rowIdx++;
+
+    // Data rows
+    const startRow = rowIdx;
+    const sceneName = common.scene_name || data.scene_name || projectName;
+
+    for (let idx = 0; idx < modules.length; idx++) {
+      const mod = modules[idx];
+      const cellIdx = startRow + idx;
+
+      if (idx === 0) {
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 0 })] = { v: '超级场景', s: { font: { bold: true } } };
+        ws[XLSX.utils.encode_cell({ r: cellIdx, c: 1 })] = { v: sceneName, s: { alignment: { wrapText: true } } };
+      }
+
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 2 })] = { v: mod.section || '线上' };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 3 })] = { v: mod.name || '', s: { alignment: { wrapText: true } } };
+      ws[XLSX.utils.encode_cell({ r: cellIdx, c: 4 })] = { v: mod.e_content || '', s: { alignment: { wrapText: true } } };
+
+      const tAxisData = mod.t_axis || [];
+      if (tAxisData.length > 0) {
+        for (let ti = 0; ti < tHeaders.length; ti++) {
+          ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + ti })] = { v: tAxisData[ti] || '/', s: { alignment: { wrapText: true } } };
+        }
+      } else {
+        const phases = mod.phases || {};
+        const phaseKeys = Object.keys(phases);
+        for (let ti = 0; ti < tHeaders.length; ti++) {
+          ws[XLSX.utils.encode_cell({ r: cellIdx, c: 5 + ti })] = { v: phases[phaseKeys[ti]] || '/', s: { alignment: { wrapText: true } } };
+        }
+      }
+    }
+
+    // Merge A, B, C columns
+    if (modules.length > 0) {
+      ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+      ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+      const onlineEnd = Math.min(4, modules.length - 1);
+      if (onlineEnd > 0) {
+        ws['!merges'].push({ s: { r: startRow, c: 2 }, e: { r: startRow + onlineEnd, c: 2 } });
+      }
+      if (modules.length > 5) {
+        ws['!merges'].push({ s: { r: startRow + 5, c: 2 }, e: { r: startRow + modules.length - 1, c: 2 } });
+      }
+    }
+
+    ws['!cols'] = [
+      { wch: 14 }, { wch: 22 }, { wch: 8 }, { wch: 28 }, { wch: 40 },
+      ...tHeaders.map(() => ({ wch: 35 }))
+    ];
+
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(startRow + modules.length - 1, 3), c: totalCols - 1 } });
+    XLSX.utils.book_append_sheet(wb, ws, '超级场景运营方案');
+    XLSX.writeFile(wb, `${projectName}-超级场景运营方案.xlsx`);
   }
-
-  ws['!cols'] = [
-    { wch: 14 }, { wch: 22 }, { wch: 8 }, { wch: 28 }, { wch: 40 },
-    ...tHeaders.map(() => ({ wch: 35 }))
-  ];
-
-  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(startRow + modules.length - 1, 3), c: totalCols - 1 } });
-  XLSX.utils.book_append_sheet(wb, ws, '超级场景运营方案');
-  XLSX.writeFile(wb, `${projectName}-超级场景运营方案.xlsx`);
 }
 
 function generateIpExcel(data, common) {
@@ -4297,7 +4436,8 @@ function App() {
       }
 
       const excelGenerator = EXCEL_GENERATORS[activeTab];
-      const downloadFn = () => excelGenerator(jsonData, common);
+      const excelCommon = { ...common, scene_name: specific.scene_name || '' };
+      const downloadFn = () => excelGenerator(jsonData, excelCommon);
 
       // Build preview
       let previewSections = [];
@@ -4312,15 +4452,27 @@ function App() {
         previewSections = [{ title: '超级业态打样表', rows }];
       } else if (activeTab === 'scene') {
         const modules = jsonData.modules || [];
-        const tHeaders = jsonData.t_axis_headers || [];
+        const isExistingScene = jsonData.scene_mode === 'existing' || (modules[0] && modules[0].months);
         const rows = [];
-        modules.forEach(m => {
-          const tAxis = m.t_axis || [];
-          tAxis.forEach((content, idx) => {
-            rows.push({ module: m.name, time: tHeaders[idx] || `T轴${idx+1}`, content: (content || '').substring(0, 100) });
+        if (isExistingScene) {
+          // 已亮相场景：月度预览
+          modules.forEach(m => {
+            Object.keys(m.months || {}).forEach(month => {
+              rows.push({ module: m.name, time: `${month}月`, content: (m.months[month] || '').substring(0, 100) });
+            });
           });
-        });
-        previewSections = [{ title: '超级场景打样表', rows }];
+          previewSections = [{ title: '超级场景打样表（常态化运营）', rows }];
+        } else {
+          // 新场景：T轴预览
+          const tHeaders = jsonData.t_axis_headers || [];
+          modules.forEach(m => {
+            const tAxis = m.t_axis || [];
+            tAxis.forEach((content, idx) => {
+              rows.push({ module: m.name, time: tHeaders[idx] || `T轴${idx+1}`, content: (content || '').substring(0, 100) });
+            });
+          });
+          previewSections = [{ title: '超级场景打样表', rows }];
+        }
       } else if (activeTab === 'ip') {
         const blocks = jsonData.blocks || [];
         blocks.forEach(block => {
