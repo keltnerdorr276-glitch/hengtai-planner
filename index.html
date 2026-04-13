@@ -856,7 +856,7 @@ function generateFormatExcel(data, common) {
   let rowIdx = 0;
 
   // Title row
-  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 16 } });
+  if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 16 } });
   ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
     v: `${projectName} · 超级业态打样表（2026年度）`,
     s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center', vertical: 'center' } }
@@ -898,8 +898,8 @@ function generateFormatExcel(data, common) {
 
   // Merge cells
   if (modules.length > 0) {
-    ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
-    ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+    if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+    if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
   }
 
   ws['!cols'] = [
@@ -923,7 +923,7 @@ function generateSceneExcel(data, common) {
 
   let rowIdx = 0;
 
-  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 12 } });
+  if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 12 } });
   ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
     v: `${projectName} · 超级场景打样表（2026年度）`,
     s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
@@ -962,8 +962,8 @@ function generateSceneExcel(data, common) {
   }
 
   if (modules.length > 0) {
-    ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
-    ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+    if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+    if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
   }
 
   ws['!cols'] = [
@@ -984,7 +984,7 @@ function generateIpExcel(data, common) {
 
   let rowIdx = 0;
 
-  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 9 } });
+  if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 9 } });
   ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
     v: `${projectName} · IP活动打样表（2026年度）`,
     s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
@@ -1030,8 +1030,8 @@ function generateIpExcel(data, common) {
     }
 
     if (modules.length > 0) {
-      ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
-      ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+      if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+      if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
     }
   }
 
@@ -1054,7 +1054,7 @@ function generateBrandExcel(data, common) {
 
   let rowIdx = 0;
 
-  ws.merge_cells({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 12 } });
+  if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 12 } });
   ws[XLSX.utils.encode_cell({ r: rowIdx, c: 0 })] = {
     v: `${projectName} · 新品牌推广打样表（2026年度）`,
     s: { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
@@ -1099,8 +1099,8 @@ function generateBrandExcel(data, common) {
     }
 
     if (modules.length > 0) {
-      ws.merge_cells({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
-      ws.merge_cells({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
+      if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
+      if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
     }
   }
 
