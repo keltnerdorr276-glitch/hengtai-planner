@@ -3169,7 +3169,7 @@ function buildCommonContext(common) {
 - 项目名称：${common.project_name || ''}
 - 城市所在地：${common.city || ''}
 - 项目定位：${common.positioning || ''}
-- 推广定调：${common.promotion_tone || ''}
+- 推广定调：${common.promotion_tone || '（用户未填写，请基于项目定位与目标客群自动推导）'}
 - 目标客群：${common.target_audience || ''}
 - 年度主题词：${common.annual_theme || '（由AI建议）'}
 - 营销背景：${common.marketing_bg || ''}
@@ -3180,7 +3180,8 @@ function buildFormatPrompt(common, specific) {
   let brandsText = '';
   for (let i = 0; i < (specific.brands || []).length; i++) {
     const b = specific.brands[i];
-    brandsText += `\n${i+1}. 品牌名称：${b.name || ''} | 业态类型：${b.category || ''} | 品牌标签：${b.tag || ''} | 开业时间：${b.open_date || ''} | 是否首店：${b.is_first_store ? '是' : '否'}`;
+    const tagStr = Array.isArray(b.tag) ? b.tag.join('、') : (b.tag || '');
+    brandsText += `\n${i+1}. 品牌名称：${b.name || ''} | 业态类型：${b.category || ''} | 品牌标签：${tagStr} | 开业时间：${b.open_date || ''} | 是否首店：${b.is_first_store ? '是' : '否'}`;
     if (b.price_range) brandsText += ` | 客单价：${b.price_range}`;
     if (b.sp_direction) brandsText += ` | SP货盘方向：${b.sp_direction}`;
   }
@@ -3596,7 +3597,9 @@ function buildBrandPrompt(common, specific) {
   let brandsText = '';
   for (let i = 0; i < (specific.brands || []).length; i++) {
     const b = specific.brands[i];
-    brandsText += `\n${i+1}. 品牌名称：${b.name || ''} | 开业时间：${b.open_date || ''} | 品牌定位：${b.positioning || ''} | 品牌风格：${b.style || ''} | 是否首店：${b.is_first_store ? '是' : '否'} | 客单价：${b.price_range || ''} | 营销策略：${b.strategy || ''}`;
+    const styleStr = Array.isArray(b.style) ? b.style.join('、') : (b.style || '');
+    const strategyStr = b.strategy && b.strategy.trim() ? b.strategy : '（用户未填写营销策略，请你基于品牌定位/风格/客单价/目标客群自动策划一套完整的营销策略，并在叙事引擎中体现）';
+    brandsText += `\n${i+1}. 品牌名称：${b.name || ''} | 开业时间：${b.open_date || ''} | 品牌定位：${b.positioning || ''} | 品牌风格：${styleStr} | 是否首店：${b.is_first_store ? '是' : '否'} | 客单价：${b.price_range || ''} | 营销策略：${strategyStr}`;
     if (b.target_audience) brandsText += ` | 目标客群：${b.target_audience}`;
     if (b.opening_activity) brandsText += ` | 开业活动：${b.opening_activity}`;
   }
@@ -4077,6 +4080,7 @@ function generateIpExcel(data, common) {
       if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
       if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
     }
+    rowIdx = startRow + Math.max(modules.length, 1); // 关键修复：让 !ref 包含模块行
   }
 
   ws['!cols'] = [
@@ -4181,6 +4185,7 @@ function generateBrandExcel(data, common) {
       if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 0 }, e: { r: startRow + modules.length - 1, c: 0 } });
       if(!ws['!merges'])ws['!merges']=[];ws['!merges'].push({ s: { r: startRow, c: 1 }, e: { r: startRow + modules.length - 1, c: 1 } });
     }
+    rowIdx = startRow + Math.max(modules.length, 1); // 关键修复：让 !ref 包含模块行
   }
 
   ws['!cols'] = [
@@ -4235,8 +4240,8 @@ function CommonFields({ common, setCommon }) {
         <FormField label="项目定位" required hint="一句话概括项目核心定位">
           <input placeholder="衢州首个青年潮流生活中心" value={common.positioning} onChange={e => update('positioning', e.target.value)} />
         </FormField>
-        <FormField label="推广定调" required hint="整体推广方向的关键词">
-          <input placeholder="年轻力、品质生活、城市新地标" value={common.promotion_tone} onChange={e => update('promotion_tone', e.target.value)} />
+        <FormField label="推广定调" optional hint="整体推广方向的关键词（留空则由AI自动推导）">
+          <input placeholder="年轻力、品质生活、城市新地标（可留空）" value={common.promotion_tone} onChange={e => update('promotion_tone', e.target.value)} />
         </FormField>
         <FormField label="目标客群" required hint="最多3个核心客群">
           <input placeholder="18-35岁城市青年、年轻家庭、品质消费客群" value={common.target_audience} onChange={e => update('target_audience', e.target.value)} />
@@ -4298,17 +4303,37 @@ function FormatTab({ specific, setSpecific }) {
                 <td><input placeholder="韩式餐饮" value={b.category} onChange={e => updateBrand(i, 'category', e.target.value)} /></td>
                 <td><input placeholder="NEED韩式料理" value={b.name} onChange={e => updateBrand(i, 'name', e.target.value)} /></td>
                 <td>
-                  <select value={b.tag} onChange={e => updateBrand(i, 'tag', e.target.value)}>
-                    <option value="">请选择</option>
-                    <option value="首店思维">城市首店</option>
-                    <option value="品质标杆">品质标杆</option>
-                    <option value="网红打卡">网红爆款</option>
-                    <option value="亲子友好">亲子友好</option>
-                    <option value="健康生活">健康生活</option>
-                    <option value="烟火气">本地烟火气</option>
-                    <option value="高端商务">高端商务</option>
-                    <option value="年轻潮流">年轻潮流</option>
-                  </select>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:'4px',alignItems:'center',minWidth:'220px'}}>
+                    {['城市首店','品质标杆','网红爆款','亲子友好','健康生活','本地烟火气','高端商务','年轻潮流'].map(opt => {
+                      const arr = Array.isArray(b.tag) ? b.tag : (b.tag ? [b.tag] : []);
+                      const checked = arr.includes(opt);
+                      return (
+                        <span key={opt} onClick={() => {
+                          const next = checked ? arr.filter(x=>x!==opt) : [...arr,opt];
+                          updateBrand(i,'tag',next);
+                        }} style={{padding:'2px 8px',border:'1px solid '+(checked?'#3b82f6':'#d1d5db'),borderRadius:'12px',cursor:'pointer',fontSize:'11px',background:checked?'#eff6ff':'#fff',color:checked?'#1e40af':'#374151',userSelect:'none',whiteSpace:'nowrap'}}>
+                          {opt}
+                        </span>
+                      );
+                    })}
+                    {(Array.isArray(b.tag) ? b.tag : []).filter(x => !['城市首店','品质标杆','网红爆款','亲子友好','健康生活','本地烟火气','高端商务','年轻潮流'].includes(x)).map(custom => (
+                      <span key={custom} onClick={() => {
+                        const arr = Array.isArray(b.tag) ? b.tag : [];
+                        updateBrand(i,'tag',arr.filter(x=>x!==custom));
+                      }} style={{padding:'2px 8px',border:'1px solid #10b981',borderRadius:'12px',cursor:'pointer',fontSize:'11px',background:'#ecfdf5',color:'#065f46',userSelect:'none',whiteSpace:'nowrap'}}>
+                        {custom} ×
+                      </span>
+                    ))}
+                    <input placeholder="+自定义" style={{border:'1px dashed #9ca3af',borderRadius:'12px',padding:'2px 8px',fontSize:'11px',width:'80px',outline:'none'}} onKeyDown={e => {
+                      if(e.key==='Enter' && e.target.value.trim()){
+                        e.preventDefault();
+                        const arr = Array.isArray(b.tag) ? b.tag : (b.tag ? [b.tag] : []);
+                        const v = e.target.value.trim();
+                        if(!arr.includes(v)) updateBrand(i,'tag',[...arr,v]);
+                        e.target.value='';
+                      }
+                    }} />
+                  </div>
                 </td>
                 <td><input placeholder="2026年5月" value={b.open_date} onChange={e => updateBrand(i, 'open_date', e.target.value)} /></td>
                 <td>
@@ -4364,11 +4389,11 @@ function SceneTab({ specific, setSpecific }) {
         <FormField label="核心定位" required hint="一句话概括场景定位">
           <input placeholder="城市级户外社交与休闲目的地" value={specific.scene_positioning || ''} onChange={e => setSpecific(prev => ({ ...prev, scene_positioning: e.target.value }))} />
         </FormField>
-        <FormField label="亮相时间" required hint="门店自行确定，格式如：2026年6月6日">
-          <input placeholder="2026年6月6日" value={specific.debut_date || ''} onChange={e => setSpecific(prev => ({ ...prev, debut_date: e.target.value }))} />
+        <FormField label="亮相时间" required hint="按实际写：新建场景写预计亮相日期；若是开业即有的空间，直接写商场开业日期">
+          <input placeholder="2026年6月6日（或商场开业日期）" value={specific.debut_date || ''} onChange={e => setSpecific(prev => ({ ...prev, debut_date: e.target.value }))} />
         </FormField>
-        <FormField label="变装节点" required hint="门店自行规划的变装时间节点">
-          <input placeholder="6月亮相 / 10月秋季变装 / 1月春节变装" value={specific.transform_nodes || ''} onChange={e => setSpecific(prev => ({ ...prev, transform_nodes: e.target.value }))} />
+        <FormField label="变装节点" required hint="门店自行规划的变装时间节点（不含亮相/开业时间本身）">
+          <input placeholder="10月秋季变装 / 1月春节变装" value={specific.transform_nodes || ''} onChange={e => setSpecific(prev => ({ ...prev, transform_nodes: e.target.value }))} />
         </FormField>
         <FormField label="场景图片" optional fullWidth hint="上传场景实拍/效果图，帮助AI更好理解空间特征">
           <div
@@ -4404,7 +4429,7 @@ function IpTab({ specific, setSpecific }) {
     <div className="card">
       <div className="card-title"><div className="icon">🎉</div> IP活动运营方案</div>
       <div style={{fontSize: 13, color: '#6b7280', marginBottom: 16}}>
-        填写年度IP和季度IP活动信息。月度IP不做打样，已过期的活动将自动跳过。
+        💡 每次只生成 1 个活动，确保 7 个模块内容深度与质量。月度IP不做打样，已过期活动自动跳过。如需生成多个活动，请分多次生成。
       </div>
       <div style={{overflowX: 'auto'}}>
         <table className="dynamic-table">
@@ -4432,8 +4457,7 @@ function IpTab({ specific, setSpecific }) {
                 </td>
                 <td><input placeholder="如：美食嘉年华、非遗国潮市集（可选）" value={a.pr_direction} onChange={e => updateActivity(i, 'pr_direction', e.target.value)} /></td>
                 <td className="row-actions">
-                  <button className="btn-icon btn-add" onClick={addActivity} title="新增活动">+</button>
-                  {activities.length > 1 && <button className="btn-icon btn-remove" onClick={() => removeActivity(i)} title="删除">−</button>}
+                  {/* 单次生成只允许1个活动，已移除+按钮 */}
                 </td>
               </tr>
             ))}
@@ -4461,17 +4485,13 @@ function BrandTab({ specific, setSpecific }) {
     <div className="card">
       <div className="card-title"><div className="icon">🏷️</div> 新品牌推广运营方案</div>
       <div style={{fontSize: 13, color: '#6b7280', marginBottom: 16}}>
-        建议选择3个即将开业的重要品牌（首店优先），每个品牌将生成完整的开业推广全周期方案。
+        💡 每次只生成 1 个品牌的完整开业推广全周期方案（8 个模块 × 8 个 T 轴阶段），确保内容深度与质量。如需多个品牌，请分多次生成。
       </div>
 
-      {brands.map((b, i) => (
+      {brands.slice(0, 1).map((b, i) => (
         <div key={i} style={{border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, marginBottom: 12, position: 'relative'}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
-            <div style={{fontSize: 14, fontWeight: 500}}>品牌 {i + 1}</div>
-            <div className="row-actions">
-              <button className="btn-icon btn-add" onClick={addBrand} title="新增品牌">+</button>
-              {brands.length > 1 && <button className="btn-icon btn-remove" onClick={() => removeBrand(i)} title="删除">−</button>}
-            </div>
+            <div style={{fontSize: 14, fontWeight: 500}}>品牌信息</div>
           </div>
           <div className="form-grid">
             <FormField label="品牌名称" required>
@@ -4483,18 +4503,38 @@ function BrandTab({ specific, setSpecific }) {
             <FormField label="品牌定位" required hint="品牌的核心定位描述">
               <input placeholder="衢州首家人均200+高端餐饮" value={b.positioning} onChange={e => updateBrand(i, 'positioning', e.target.value)} />
             </FormField>
-            <FormField label="品牌风格" required>
-              <select value={b.style} onChange={e => updateBrand(i, 'style', e.target.value)}>
-                <option value="">请选择</option>
-                <option value="城市首店">城市首店</option>
-                <option value="品质标杆">品质标杆</option>
-                <option value="网红爆款">网红爆款</option>
-                <option value="亲子友好">亲子友好</option>
-                <option value="健康生活">健康生活</option>
-                <option value="本地烟火气">本地烟火气</option>
-                <option value="高端商务">高端商务</option>
-                <option value="年轻潮流">年轻潮流</option>
-              </select>
+            <FormField label="品牌风格" required hint="可多选，也可自定义输入后按回车添加">
+              <div style={{display:'flex',flexWrap:'wrap',gap:'6px',alignItems:'center'}}>
+                {['城市首店','品质标杆','网红爆款','亲子友好','健康生活','本地烟火气','高端商务','年轻潮流'].map(opt => {
+                  const arr = Array.isArray(b.style) ? b.style : (b.style ? [b.style] : []);
+                  const checked = arr.includes(opt);
+                  return (
+                    <span key={opt} onClick={() => {
+                      const next = checked ? arr.filter(x=>x!==opt) : [...arr,opt];
+                      updateBrand(i, 'style', next);
+                    }} style={{padding:'4px 10px',border:'1px solid '+(checked?'#3b82f6':'#d1d5db'),borderRadius:'16px',cursor:'pointer',fontSize:'12px',background:checked?'#eff6ff':'#fff',color:checked?'#1e40af':'#374151',userSelect:'none'}}>
+                      {opt}
+                    </span>
+                  );
+                })}
+                {(Array.isArray(b.style) ? b.style : []).filter(x => !['城市首店','品质标杆','网红爆款','亲子友好','健康生活','本地烟火气','高端商务','年轻潮流'].includes(x)).map(custom => (
+                  <span key={custom} onClick={() => {
+                    const arr = Array.isArray(b.style) ? b.style : [];
+                    updateBrand(i, 'style', arr.filter(x=>x!==custom));
+                  }} style={{padding:'4px 10px',border:'1px solid #10b981',borderRadius:'16px',cursor:'pointer',fontSize:'12px',background:'#ecfdf5',color:'#065f46',userSelect:'none'}}>
+                    {custom} ×
+                  </span>
+                ))}
+                <input placeholder="+自定义，回车添加" style={{border:'1px dashed #9ca3af',borderRadius:'16px',padding:'4px 10px',fontSize:'12px',width:'150px',outline:'none'}} onKeyDown={e => {
+                  if(e.key==='Enter' && e.target.value.trim()){
+                    e.preventDefault();
+                    const arr = Array.isArray(b.style) ? b.style : (b.style ? [b.style] : []);
+                    const v = e.target.value.trim();
+                    if(!arr.includes(v)) updateBrand(i,'style',[...arr,v]);
+                    e.target.value='';
+                  }
+                }} />
+              </div>
             </FormField>
             <FormField label="是否首店" required>
               <select value={b.is_first_store ? 'yes' : 'no'} onChange={e => updateBrand(i, 'is_first_store', e.target.value === 'yes')}>
@@ -4505,8 +4545,8 @@ function BrandTab({ specific, setSpecific }) {
             <FormField label="客单价范围" required hint="用于推导SP货盘方向">
               <input placeholder="人均200+" value={b.price_range} onChange={e => updateBrand(i, 'price_range', e.target.value)} />
             </FormField>
-            <FormField label="营销策略" required fullWidth>
-              <input placeholder="以口碑和品质感打开市场，联动美食矩阵其他品牌做集群效应" value={b.strategy} onChange={e => updateBrand(i, 'strategy', e.target.value)} />
+            <FormField label="营销策略" optional fullWidth hint="留空则由 AI 根据品牌定位+风格+客单价自动策划">
+              <input placeholder="以口碑和品质感打开市场，联动美食矩阵其他品牌做集群效应（可留空）" value={b.strategy} onChange={e => updateBrand(i, 'strategy', e.target.value)} />
             </FormField>
             <FormField label="目标客群" optional>
               <input placeholder="商务宴请、品质约会、家庭聚餐" value={b.target_audience} onChange={e => updateBrand(i, 'target_audience', e.target.value)} />
@@ -4621,6 +4661,7 @@ function App() {
 
     setLoading(true);
     setStatus('正在生成中....');
+    setDebugRaw(''); // 清空上一次调试面板
 
     try {
       const tabName = TABS.find(t => t.key === activeTab)?.name || '';
@@ -4687,6 +4728,7 @@ function App() {
               responseText += evt.delta.text;
               if (responseText.length % 200 < 20) {
                 setStatus(`正在接收AI响应... 已收到 ${responseText.length} 字符`);
+                setDebugRaw(responseText); // 边接收边显示
               }
             } else if (evt.type === 'error') {
               throw new Error(evt.error?.message || 'Stream error');
