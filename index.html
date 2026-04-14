@@ -3215,7 +3215,7 @@ ${brandsText}
 3. 每个月份格用【创意标题】+详细执行内容
 4. M1讲故事，M2讲渠道，不可混淆
 
-输出严格JSON格式（不要输出其他任何文字）：
+输出严格JSON格式（禁止用 \`\`\`json 代码块包裹，禁止任何解释性文字，直接以 { 开头以 } 结尾）：
 {
   "narrative_engine": "叙事引擎完整描述",
   "format_name": "业态名称（如超级美食中心）",
@@ -3328,7 +3328,7 @@ function buildScenePrompt(common, specific) {
 4. M1讲故事，M2讲渠道，严禁混淆
 5. 场景专属话题必须原创
 
-输出严格JSON格式（不要输出其他任何文字）：
+输出严格JSON格式（禁止用 \`\`\`json 代码块包裹，禁止任何解释性文字，直接以 { 开头以 } 结尾）：
 {
   "scene_mode": "existing",
   "narrative_engine": "叙事引擎完整描述（围绕场景全年持续运营+变装节点展开）",
@@ -3408,7 +3408,7 @@ T轴共10列，每列包含标题名称+具体日期范围：
 4. M1讲故事，M2讲渠道，严禁混淆
 5. 场景专属话题必须原创
 
-输出严格JSON格式（不要输出其他任何文字）：
+输出严格JSON格式（禁止用 \`\`\`json 代码块包裹，禁止任何解释性文字，直接以 { 开头以 } 结尾）：
 {
   "scene_mode": "new",
   "narrative_engine": "叙事引擎完整描述",
@@ -3496,12 +3496,12 @@ ${activitiesText}
 - 季度IP：T-14至T-8 | T-7至T-4 | T-3至T-1 | 活动中 | 活动后T+1至T+3
 - 每个T轴表头必须含具体日期范围
 
-输出严格JSON格式（不要输出其他任何文字）：
+输出严格JSON格式（禁止用 \`\`\`json 代码块包裹，禁止任何解释性文字，直接以 { 开头以 } 结尾）：
 {
   "blocks": [
     {
-      "activity_name": "活动名称——级别",
-      "narrative_engine": "叙事引擎",
+      "activity_name": "第1个活动名称——级别",
+      "narrative_engine": "本活动专属叙事引擎（必须与其他block完全不同）",
       "t_axis_headers": [
         "T-21至T-15(倒数第3周)\\n(起止日期)",
         "T-14至T-8(倒数第2周)\\n(起止日期)",
@@ -3510,17 +3510,64 @@ ${activitiesText}
         "T+1至T+3天(深度复盘)\\n(起止日期)"
       ],
       "modules": [
-        {
-          "name": "1. 话题推演与故事线（线上活动话题）\\n核心营销叙事与情绪价值挖掘，给消费者一个必须关注的理由",
-          "section": "线上",
-          "e_content": "E列具体工作内容（≥120字，含三幕叙事结构）",
-          "columns": ["F列内容", "G列内容", "H列内容", "I列内容", "J列内容"]
-        }
+        { "name": "1. 话题推演与故事线（线上活动话题）\\n核心营销叙事与情绪价值挖掘，给消费者一个必须关注的理由", "section": "线上", "e_content": "≥120字，含三幕叙事结构", "columns": ["F列","G列","H列","I列","J列"] },
+        { "name": "2. SEO话题与内容种草\\n小红书/抖音/大众点评/本地号SEO布局", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "3. 宣发矩阵（9层）\\n官方/KOL/KOC/员工/商户/异业/私域/公域/政务", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "4. 权益SP设计\\n早鸟/满赠/抽奖/异业券包", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "5. 直播矩阵\\n官方直播+商户走播+KOL直播", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "6. 线下氛围与动线\\n围挡/DP点/氛围陈列/互动装置", "section": "线下", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "7. 线下执行与职人\\n职人参与/现场服务/体验设计", "section": "线下", "e_content": "≥50字", "columns": ["F","G","H","I","J"] }
+      ]
+    },
+    {
+      "activity_name": "第2个活动名称——级别",
+      "narrative_engine": "第2个活动专属叙事引擎（禁止与第1个重复、禁止同义替换）",
+      "t_axis_headers": [
+        "T-14至T-8(倒数第2周)\\n(起止日期)",
+        "T-7至T-4(倒数第1周)\\n(起止日期)",
+        "T-3至T-1(冲刺)\\n(起止日期)",
+        "活动落地执行(强爆发)\\n(起止日期)",
+        "T+1至T+3天(深度复盘)\\n(起止日期)"
+      ],
+      "modules": [
+        { "name": "1. 话题推演与故事线（线上活动话题）\\n核心营销叙事与情绪价值挖掘", "section": "线上", "e_content": "≥120字", "columns": ["F列","G列","H列","I列","J列"] },
+        { "name": "2. SEO话题与内容种草\\n小红书/抖音/大众点评布局", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "3. 宣发矩阵（9层）\\n官方/KOL/KOC/员工/商户/异业/私域/公域/政务", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "4. 权益SP设计\\n早鸟/满赠/抽奖/异业券包", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "5. 直播矩阵\\n官方直播+商户走播+KOL直播", "section": "线上", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "6. 线下氛围与动线\\n围挡/DP点/氛围陈列/互动装置", "section": "线下", "e_content": "≥50字", "columns": ["F","G","H","I","J"] },
+        { "name": "7. 线下执行与职人\\n职人参与/现场服务/体验设计", "section": "线下", "e_content": "≥50字", "columns": ["F","G","H","I","J"] }
       ]
     }
   ]
 }
-⚠️ 输出完整性要求：必须保证每个block完整7个模块，所有T轴格都有内容。
+
+🔴🔴🔴 强制输出规则（极其重要，每一条违反都视为任务失败必须完全重写）：
+
+【规则1：blocks 数量】
+- blocks 数组**必须严格包含 ${(specific.activities||[]).length} 个元素**（已过期活动请返回该 block 但标注 activity_name 含"（已过期跳过）"）
+- 每个元素对应一个输入活动（已过期活动跳过不计）
+- 第 1 个活动填入 blocks[0]，第 2 个活动填入 blocks[1]，依此类推
+- 禁止合并、跳过任何活动
+
+【规则2：每个 block 必须 7 个完整 modules】
+- 每个 block 的 modules 数组**严格包含 7 个元素**，对应编号 1~7
+- 每个 module 必须是完整对象：{name, section, e_content, columns}，四个字段齐全
+- 禁止用字符串、"..."、"同上"、null、空数组等占位
+- 如果你要输出第 2 个 block，它的 modules 必须像第 1 个 block 一样展开 7 个完整模块对象
+
+【规则3：每个 module 必须 5 个 columns】
+- columns 数组严格 5 个字符串元素，对应 F/G/H/I/J 列
+- 每个字符串必须是真实内容（不是"F列"这种占位），字数达标
+- 禁止空字符串""、禁止 null
+
+【规则4：叙事独立性】
+- 不同 block 的 narrative_engine、话题关键词、故事主线必须完全不同
+- "屋顶花园故事" 和 "屋顶大会" 共用悬疑解谜主线属于同义复用，必须重写其一
+
+【规则5：输出长度】
+- 请一次性输出完整 JSON，不要中途停下，不要使用"..."省略
+- 宁可每格字数稍少，也必须把所有 block × 所有 module × 所有 column 写完
 
 ### 字数硬性标准（IP活动打样）：
 - 模块1（话题推演）：E列≥120字，活动前每格≥80字，活动中≥100字，活动后≥60字
@@ -3577,12 +3624,12 @@ ${brandsText}
 - 根据品牌开业时间自动推算日期
 - T轴表头必须含具体日期范围
 
-输出严格JSON格式（不要输出其他任何文字）：
+输出严格JSON格式（禁止用 \`\`\`json 代码块包裹，禁止任何解释性文字，直接以 { 开头以 } 结尾）：
 {
   "blocks": [
     {
-      "brand_name": "品牌名称",
-      "narrative_engine": "叙事引擎",
+      "brand_name": "第1个品牌名称",
+      "narrative_engine": "该品牌专属叙事引擎（基于品牌定位/风格，禁止与其他品牌雷同）",
       "t_axis_headers": [
         "合同签约",
         "T-21至T-15(造势)\\n起止日期",
@@ -3594,17 +3641,30 @@ ${brandsText}
         "T+30后\\n(长效经营)"
       ],
       "modules": [
-        {
-          "name": "1.品牌卖点与话题造势\\n核心营销叙事与情绪价值挖掘，包括标签挖掘、品牌故事线、围挡期悬念包装",
-          "section": "线上",
-          "e_content": "E列具体工作内容（品牌定位+叙事逻辑+执行原则，≥100字）",
-          "columns": ["合同签约内容", "造势期内容", "锁客期内容", "冲刺期内容", "开业引爆内容", "爆单期内容", "稳场期内容", "长效经营内容"]
-        }
+        { "name": "1.品牌卖点与话题造势\\n核心营销叙事与情绪价值挖掘，包括标签挖掘、品牌故事线、围挡期悬念包装", "section": "线上", "e_content": "品牌定位+叙事逻辑+执行原则，≥100字", "columns": ["签约段内容","造势段内容","锁客段内容","冲刺段内容","开业引爆内容","爆单段内容","稳场段内容","长效段内容"] },
+        { "name": "2.宣发矩阵（9层）\\n官方/KOL/KOC/员工/商户/异业/私域/公域/政务联动", "section": "线上", "e_content": "≥40字", "columns": ["8段各≥20-50字的具体部署，禁止空字符串"] },
+        { "name": "3.权益预设\\n早鸟券/开业礼/异业券包/会员专享", "section": "线上", "e_content": "≥30字", "columns": ["签约","造势","锁客","冲刺","开业","爆单","稳场","长效 — 共8段"] },
+        { "name": "4.直播矩阵\\n官方直播+品牌主理人+KOL走播", "section": "线上", "e_content": "≥30字", "columns": ["8段具体内容"] },
+        { "name": "5.口碑运营\\n小红书/大众点评/美团评论区种草与维护", "section": "线上", "e_content": "≥30字", "columns": ["8段具体内容"] },
+        { "name": "6.线下围挡与DP点\\n围挡创意、DP点氛围、动线引流", "section": "线下", "e_content": "≥30字", "columns": ["8段具体内容"] },
+        { "name": "7.线下体验与到店服务\\n到店礼/体验设计/首店仪式感", "section": "线下", "e_content": "≥30字", "columns": ["8段具体内容"] },
+        { "name": "8.异业联动与长效\\n商场内外异业联动/会员沉淀/复购机制", "section": "线下", "e_content": "≥30字", "columns": ["8段具体内容"] }
       ]
+    },
+    {
+      "brand_name": "第2个品牌名称（如有多个品牌输入）",
+      "narrative_engine": "...",
+      "t_axis_headers": ["...同上8个T轴..."],
+      "modules": ["...同样必须给满8个模块..."]
     }
   ]
 }
-⚠️ 输出完整性要求：必须保证每个品牌block完整8个模块，所有T轴格都有内容。
+
+🔴 强制输出完整性（缺一项视为未完成，必须重写）：
+- blocks 数组必须包含【${(specific.brands||[]).length}】个元素，对应输入的每个品牌
+- 每个 block 的 modules 数组必须严格包含 8 个元素（模块1~模块8），顺序与编号一致，禁止省略
+- 每个 module 的 columns 数组必须严格包含 8 个元素，对应 8 个T轴阶段，每段都必须有内容，禁止空字符串、"同上"、"..."
+- 不同品牌 block 之间：narrative_engine、话题、故事主线必须完全独立，禁止套用同一叙事模板
 
 ### 字数硬性标准（品牌推广打样）：
 - 模块1（品牌卖点）：E列≥100字，签约/造势/锁客/冲刺各≥50字，开业引爆≥100字，爆单/稳场/长效各≥80字
@@ -4643,15 +4703,19 @@ function App() {
       let jsonData;
       const repairJSON = (str) => {
         let s = str.trim();
-        // Remove ALL markdown code fences (any number of backticks, opening and closing)
+        // 1. 彻底剥离 markdown 代码块（包括开头和末尾的 ```json / ```）
+        s = s.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
         s = s.replace(/`{3,}(?:json)?/gi, '').trim();
-        // Extract outermost JSON object
-        const m = s.match(/\{[\s\S]*\}/);
-        if (m) s = m[0];
-        // Fix trailing commas before } or ]
+        // 2. 按首个 { 到最后一个 } 裁剪（丢掉前后任何解释性文字或残留反引号）
+        const firstBrace = s.indexOf('{');
+        const lastBrace = s.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          s = s.substring(firstBrace, lastBrace + 1);
+        }
+        // 3. 修复末尾逗号
         s = s.replace(/,\s*([\}\]])/g, '$1');
-        // Fix unescaped newlines inside strings
-        s = s.replace(/"([^"]*?)"/g, (match) => {
+        // 4. 修复字符串内未转义的换行/制表符
+        s = s.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match) => {
           return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
         });
         return s;
@@ -4662,17 +4726,21 @@ function App() {
         try {
           jsonData = JSON.parse(repairJSON(responseText));
         } catch (e2) {
-          // Last resort: try to find and parse just the JSON object
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            try {
-              jsonData = JSON.parse(repairJSON(jsonMatch[0]));
-            } catch (e3) {
-              console.error('JSON repair failed. Raw response:', responseText.slice(0, 2000));
-              throw new Error('AI返回的JSON格式有误，请重试一次。错误位置: ' + e1.message);
-            }
-          } else {
-            throw new Error('AI未返回有效JSON，请重试');
+          // 兜底：如果输出被截断，尝试补上缺失的 ] 和 }
+          try {
+            let s = repairJSON(responseText);
+            const openObj = (s.match(/\{/g) || []).length;
+            const closeObj = (s.match(/\}/g) || []).length;
+            const openArr = (s.match(/\[/g) || []).length;
+            const closeArr = (s.match(/\]/g) || []).length;
+            for (let i = 0; i < openArr - closeArr; i++) s += ']';
+            for (let i = 0; i < openObj - closeObj; i++) s += '}';
+            jsonData = JSON.parse(s);
+          } catch (e3) {
+            console.error('JSON 修复彻底失败。原始响应前 3000 字：', responseText.slice(0, 3000));
+            console.error('原始响应后 1000 字：', responseText.slice(-1000));
+            const hint = responseText.length > 30000 ? '（输出可能已被截断，建议减少输入数量后重试）' : '';
+            throw new Error('AI返回的JSON格式有误' + hint + '。解析错误: ' + (e2.message || e1.message).slice(0, 200));
           }
         }
       }
