@@ -4607,6 +4607,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [result, setResult] = useState(null);
+  const [debugRaw, setDebugRaw] = useState('');
 
   const handleGenerate = async () => {
     if (!apiKey.trim()) {
@@ -4695,6 +4696,9 @@ function App() {
           }
         }
       }
+
+      // 保存原始响应供页面调试查看（无需 F12）
+      setDebugRaw(responseText || '(空)');
 
       if (!responseText) {
         throw new Error('AI未返回任何内容，请重试');
@@ -4879,6 +4883,22 @@ function App() {
             {loading ? '生成中...' : '生成方案'}
           </button>
           {status && <div className={`status-text ${status.includes('错误') || status.includes('❌') ? 'error' : status.includes('✅') ? 'success' : ''}`}>{status}</div>}
+          {debugRaw && (
+            <div style={{marginTop:'16px',border:'1px solid #ddd',borderRadius:'8px',background:'#f9f9f9'}}>
+              <div style={{padding:'8px 12px',borderBottom:'1px solid #ddd',display:'flex',justifyContent:'space-between',alignItems:'center',fontWeight:'bold',fontSize:'13px'}}>
+                <span>🔍 AI 原始响应（调试用，共 {debugRaw.length} 字符）</span>
+                <span>
+                  <button onClick={() => {navigator.clipboard.writeText(debugRaw); alert('已复制到剪贴板，可直接粘贴给 Claude 排查');}} style={{marginRight:'8px',padding:'2px 10px',fontSize:'12px',cursor:'pointer'}}>📋 复制全部</button>
+                  <button onClick={() => setDebugRaw('')} style={{padding:'2px 10px',fontSize:'12px',cursor:'pointer'}}>✕ 关闭</button>
+                </span>
+              </div>
+              <textarea
+                readOnly
+                value={debugRaw}
+                style={{width:'100%',height:'300px',padding:'10px',border:'none',background:'#f9f9f9',fontFamily:'monospace',fontSize:'12px',resize:'vertical',boxSizing:'border-box'}}
+              />
+            </div>
+          )}
         </div>
 
         {result && <PreviewPanel result={result} onClose={() => setResult(null)} />}
