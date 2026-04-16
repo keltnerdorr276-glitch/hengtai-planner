@@ -4825,27 +4825,80 @@ function App() {
         });
         return s;
       };
+      // 截断修复：如果响应在字符串/数组/对象中间被硬切断，扫描并补齐
+      const repairTruncated = (raw) => {
+        let s = raw.trim();
+        s = s.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        const firstBrace = s.indexOf('{');
+        if (firstBrace === -1) return s;
+        s = s.substring(firstBrace);
+        // 逐字符扫描，跟踪括号栈 + 字符串状态
+        const stack = []; // '{' or '['
+        let inString = false;
+        let escape = false;
+        let lastCompleteIdx = -1; // 最后一个"安全"切断点（字符串外、在 , 或 } 或 ] 之后）
+        for (let i = 0; i < s.length; i++) {
+          const c = s[i];
+          if (escape) { escape = false; continue; }
+          if (c === '\\') { escape = true; continue; }
+          if (inString) {
+            if (c === '"') inString = false;
+            continue;
+          }
+          if (c === '"') { inString = true; continue; }
+          if (c === '{' || c === '[') stack.push(c);
+          else if (c === '}' || c === ']') { stack.pop(); lastCompleteIdx = i; }
+          else if (c === ',') lastCompleteIdx = i;
+        }
+        // 如果末尾在字符串中，回退到最后一个 ,/]/} 后截断
+        if (inString) {
+          if (lastCompleteIdx > 0) {
+            s = s.substring(0, lastCompleteIdx + 1);
+            // 重算 stack
+            stack.length = 0;
+            let inS = false, esc = false;
+            for (let i = 0; i < s.length; i++) {
+              const c = s[i];
+              if (esc) { esc = false; continue; }
+              if (c === '\\') { esc = true; continue; }
+              if (inS) { if (c === '"') inS = false; continue; }
+              if (c === '"') { inS = true; continue; }
+              if (c === '{' || c === '[') stack.push(c);
+              else if (c === '}' || c === ']') stack.pop();
+            }
+          } else {
+            s += '"'; // 兜底关闭字符串
+          }
+        }
+        // 去掉末尾多余的逗号
+        s = s.replace(/,\s*$/, '');
+        // 按栈反向补齐括号
+        while (stack.length > 0) {
+          const open = stack.pop();
+          s += open === '{' ? '}' : ']';
+        }
+        // 再清一遍尾逗号
+        s = s.replace(/,\s*([\}\]])/g, '$1');
+        return s;
+      };
       try {
         jsonData = JSON.parse(responseText);
       } catch (e1) {
         try {
           jsonData = JSON.parse(repairJSON(responseText));
         } catch (e2) {
-          // 兜底：如果输出被截断，尝试补上缺失的 ] 和 }
           try {
-            let s = repairJSON(responseText);
-            const openObj = (s.match(/\{/g) || []).length;
-            const closeObj = (s.match(/\}/g) || []).length;
-            const openArr = (s.match(/\[/g) || []).length;
-            const closeArr = (s.match(/\]/g) || []).length;
-            for (let i = 0; i < openArr - closeArr; i++) s += ']';
-            for (let i = 0; i < openObj - closeObj; i++) s += '}';
-            jsonData = JSON.parse(s);
+            // 高级截断修复
+            jsonData = JSON.parse(repairTruncated(responseText));
           } catch (e3) {
             console.error('JSON 修复彻底失败。原始响应前 3000 字：', responseText.slice(0, 3000));
             console.error('原始响应后 1000 字：', responseText.slice(-1000));
-            const hint = responseText.length > 30000 ? '（输出可能已被截断，建议减少输入数量后重试）' : '';
-            throw new Error('AI返回的JSON格式有误' + hint + '。解析错误: ' + (e2.message || e1.message).slice(0, 200));
+            const tail = responseText.slice(-200).trim();
+            const looksTrunc = !tail.endsWith('}') && !tail.endsWith(']');
+            const hint = looksTrunc
+              ? '（AI 输出在中途被硬截断，常见原因：单次请求内容过多。建议精简输入/分多次生成后重试）'
+              : (responseText.length > 30000 ? '（输出可能已被截断，建议减少输入数量后重试）' : '');
+            throw new Error('AI返回的JSON格式有误' + hint + '。解析错误: ' + (e3.message || e2.message || e1.message).slice(0, 200));
           }
         }
       }
