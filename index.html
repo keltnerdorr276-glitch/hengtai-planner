@@ -4773,47 +4773,57 @@ function App() {
         throw new Error(errMsg);
       }
 
-      // --- 流式读取 SSE ---
+      // --- 流式读取 SSE（含网络中断容错） ---
       setStatus('正在接收AI响应...');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let responseText = '';
       let sseBuffer = '';
+      let streamError = null;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        sseBuffer += decoder.decode(value, { stream: true });
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          sseBuffer += decoder.decode(value, { stream: true });
 
-        const lines = sseBuffer.split('\n');
-        sseBuffer = lines.pop(); // keep incomplete line in buffer
+          const lines = sseBuffer.split('\n');
+          sseBuffer = lines.pop(); // keep incomplete line in buffer
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const payload = line.slice(6).trim();
-          if (payload === '[DONE]') continue;
-          try {
-            const evt = JSON.parse(payload);
-            if (evt.type === 'content_block_delta' && evt.delta?.text) {
-              responseText += evt.delta.text;
-              if (responseText.length % 200 < 20) {
-                setStatus(`正在接收AI响应... 已收到 ${responseText.length} 字符`);
-                setDebugRaw(responseText); // 边接收边显示
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const payload = line.slice(6).trim();
+            if (payload === '[DONE]') continue;
+            try {
+              const evt = JSON.parse(payload);
+              if (evt.type === 'content_block_delta' && evt.delta?.text) {
+                responseText += evt.delta.text;
+                if (responseText.length % 200 < 20) {
+                  setStatus(`正在接收AI响应... 已收到 ${responseText.length} 字符`);
+                  setDebugRaw(responseText); // 边接收边显示
+                }
+              } else if (evt.type === 'error') {
+                throw new Error(evt.error?.message || 'Stream error');
               }
-            } else if (evt.type === 'error') {
-              throw new Error(evt.error?.message || 'Stream error');
+            } catch (parseErr) {
+              // skip non-JSON SSE lines (event:, etc.)
             }
-          } catch (parseErr) {
-            // skip non-JSON SSE lines (event:, etc.)
           }
         }
+      } catch (netErr) {
+        streamError = netErr;
+        console.warn('流式传输中断，已收到', responseText.length, '字符，尝试用已有数据恢复...');
       }
 
       // 保存原始响应供页面调试查看（无需 F12）
       setDebugRaw(responseText || '(空)');
 
       if (!responseText) {
-        throw new Error('AI未返回任何内容，请重试');
+        throw new Error(streamError ? `network error（网络中断，未收到任何数据，请检查网络后重试）` : 'AI未返回任何内容，请重试');
+      }
+      // 如果网络中断但已收到部分数据，提示用户但继续尝试解析
+      if (streamError && responseText.length > 0) {
+        setStatus(`⚠️ 网络中断（已收到${responseText.length}字符），正在尝试用已有数据生成...`);
       }
 
       let jsonData;
@@ -4921,9 +4931,14 @@ function App() {
             console.error('原始响应后 1000 字：', responseText.slice(-1000));
             const tail = responseText.slice(-200).trim();
             const looksTrunc = !tail.endsWith('}') && !tail.endsWith(']');
-            const hint = looksTrunc
-              ? '（AI 输出在中途被硬截断，常见原因：单次请求内容过多。建议精简输入/分多次生成后重试）'
-              : (responseText.length > 30000 ? '（输出可能已被截断，建议减少输入数量后重试）' : '');
+            let hint = '';
+            if (streamError) {
+              hint = `（网络中断，仅收到${responseText.length}字符。请检查网络连接是否稳定，然后重试）`;
+            } else if (looksTrunc) {
+              hint = '（AI 输出在中途被硬截断，常见原因：单次请求内容过多。建议精简输入/分多次生成后重试）';
+            } else if (responseText.length > 30000) {
+              hint = '（输出可能已被截断，建议减少输入数量后重试）';
+            }
             throw new Error('AI返回的JSON格式有误' + hint + '。解析错误: ' + (e3.message || e2.message || e1.message).slice(0, 200));
           }
         }
