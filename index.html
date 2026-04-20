@@ -4830,11 +4830,26 @@ function App() {
         }
         // 3. 修复末尾逗号
         s = s.replace(/,\s*([\}\]])/g, '$1');
-        // 4. 修复字符串内未转义的换行/制表符
-        s = s.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match) => {
-          return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-        });
-        return s;
+        // 4. 逐字符扫描：转义字符串内所有控制字符（\n \r \t 及 charCode<0x20）
+        //    替代原来的正则方案，解决超长中文字符串正则回溯失败的问题
+        let result = '';
+        let inString = false;
+        let esc = false;
+        for (let i = 0; i < s.length; i++) {
+          const c = s[i];
+          if (esc) { result += c; esc = false; continue; }
+          if (c === '\\' && inString) { result += c; esc = true; continue; }
+          if (c === '"') { inString = !inString; result += c; continue; }
+          if (inString) {
+            const code = c.charCodeAt(0);
+            if (c === '\n') { result += '\\n'; continue; }
+            if (c === '\r') { result += '\\r'; continue; }
+            if (c === '\t') { result += '\\t'; continue; }
+            if (code < 0x20) { result += '\\u' + code.toString(16).padStart(4, '0'); continue; }
+          }
+          result += c;
+        }
+        return result;
       };
       // 截断修复：如果响应在字符串/数组/对象中间被硬切断，扫描并补齐
       const repairTruncated = (raw) => {
