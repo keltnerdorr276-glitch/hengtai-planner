@@ -4840,8 +4840,8 @@ function App() {
         }
         // 3. 修复末尾逗号
         s = s.replace(/,\s*([\}\]])/g, '$1');
-        // 4. 逐字符扫描：转义字符串内所有控制字符（\n \r \t 及 charCode<0x20）
-        //    替代原来的正则方案，解决超长中文字符串正则回溯失败的问题
+        // 4. 逐字符扫描：转义控制字符 + 修复字符串内未转义的双引号
+        //    AI经常在中文内容里用 "引号" 作为书名号/强调，导致JSON解析失败
         let result = '';
         let inString = false;
         let esc = false;
@@ -4849,7 +4849,28 @@ function App() {
           const c = s[i];
           if (esc) { result += c; esc = false; continue; }
           if (c === '\\' && inString) { result += c; esc = true; continue; }
-          if (c === '"') { inString = !inString; result += c; continue; }
+          if (c === '"') {
+            if (!inString) {
+              // 不在字符串内 → 开启字符串
+              inString = true;
+              result += c;
+            } else {
+              // 在字符串内遇到 " → 判断是结构性引号还是内容中的引号
+              // 方法：看后面第一个非空白字符是否是 JSON 结构符 , } ] :
+              let j = i + 1;
+              while (j < s.length && (s[j] === ' ' || s[j] === '\t' || s[j] === '\n' || s[j] === '\r')) j++;
+              const nextCh = j < s.length ? s[j] : '';
+              if (nextCh === ',' || nextCh === '}' || nextCh === ']' || nextCh === ':' || nextCh === '') {
+                // 后面跟的是 JSON 结构符 → 这是真正的字符串结尾
+                inString = false;
+                result += c;
+              } else {
+                // 后面跟的是普通文字 → 这是内容中的引号，需要转义
+                result += '\\"';
+              }
+            }
+            continue;
+          }
           if (inString) {
             const code = c.charCodeAt(0);
             if (c === '\n') { result += '\\n'; continue; }
